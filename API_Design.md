@@ -2,9 +2,13 @@
 
 
 - User must be able to select the Location
+ 
+ ```json
  GET v1//location
-
+```
+```json
  Response:
+
  { 
     "page": 1
     "pageSize": 10
@@ -17,6 +21,7 @@
     ]
 
  }
+```
 
 - User must be able to browse by Events or Performers or Venue for each location
 - User must be able to see all the details by
@@ -24,9 +29,12 @@
  * Performers (Events by Date Time should redirect to specific event, Venue)
  * Venue (Events and Performers by Date Time should redirect to specific event)
 
+```json
 GET v1//performers?{location=location_id}
-
+```
+```json
 Response:
+
 { 
   "page": 1
   "pageSize": 10
@@ -38,10 +46,13 @@ Response:
         }
     ]
 }
+```
 
-
+```json
 GET v1//venue?{location=location_id}
+```
 
+```json
 Response:
 {
 "page": 1
@@ -55,9 +66,13 @@ Response:
     }
   ]
 }
+```
 
-
+```json
 GET v1//events?location=location_id&performer=perform_id&venue=venueId
+```
+
+```json
 Response:
 
 { "page": 1
@@ -85,8 +100,9 @@ Response:
         }
     ]
 }
+````
 
-
+```json
 GET v1//event/{eventId}
 
 {
@@ -139,10 +155,12 @@ GET v1//event/{eventId}
         "seatMapEndpoint": "/v1/events/event001/seats"
     }
 }
+```
 
 
+```json
 GET /v1/events/event001/seats
-
+```
 
 
 - User must be able to select the number of tickets and the total price should be diplsayed and on click of "Book Ticket" should redirect to Payment Gateway
