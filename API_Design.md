@@ -129,7 +129,7 @@ Response:
 - User selects an Event and get all the event details
 
 ```json
-GET v1//event/{eventId}
+GET v1/event/{eventId}
 ```
 
 ```json
