@@ -1,5 +1,12 @@
+# API Design Specifications
+---
+
+## Authentications
 - User must be able to authenticate via a Federated Login or Username/Password
 
+
+---
+## Location Selection
 
 - User must be able to select the Location
  
@@ -23,12 +30,17 @@
 
 ```
 
+---
+
+## Browsing, and filtering Events, Performers, and Venue by Location
+
 - User must be able to browse by Events or Performers or Venue for each location
 - User must be able to see all the details by
  * Events (DateTime, Performer, Ticket Price by Category, Seat Map if applicable)
  * Performers (Events by Date Time should redirect to specific event, Venue)
  * Venue (Events and Performers by Date Time should redirect to specific event)
 
+### Browse by Performers
 ```json
 GET v1//performers?{location=location_id}
 ```
@@ -48,13 +60,13 @@ Response:
 }
 ```
 
+### Browse by Venue
 ```json
 GET v1//venue?{location=location_id}
 ```
 
 ```json
 Response:
-{
 
 {
   "page": 1,
@@ -70,6 +82,7 @@ Response:
 
 ```
 
+### Browse by Events (filter by Performers And/Or Venue)
 ```json
 GET v1//events?location=location_id&performer=perform_id&venue=venueId
 ```
@@ -107,7 +120,13 @@ Response:
     }
   ]
 }
-````
+```
+
+---
+
+## Select an Event and Get Event Details
+
+- User selects an Event and get all the event details
 
 ```json
 GET v1//event/{eventId}
@@ -170,6 +189,10 @@ Response
 
 ```
 
+---
+
+## User selects a Category and the browse the seat and select the seats
+
 - User Selects a Category from dorpdown and then selects a seat from seatmap
 
 ```json
@@ -208,9 +231,11 @@ Response:
 }
 ```
 
+---
 
+## Reserve Ticket
 
-- User must be able to select the number of tickets and the total price should be diplsayed and on click of "Book Ticket" should redirect to Payment Gateway
+- User is able to reserve tickets and navigate to Payment Gateway for Payments
 
 ```json
 POST /reserveTicket
@@ -219,11 +244,25 @@ POST /reserveTicket
 ```json
 Response:
 
+```
 
+---
 
+## Book Ticket
 
+- User makes a successful payment and has booked a ticket
 
+```json
 PUT /confirmTicket
+```
+
+```json
+
+```
+
+---
+
+## Notify User
 
 - User should get a notification on Email/SMS on successful or failed attempts at booking ticket
 Notifcation Event via SES/SNS
