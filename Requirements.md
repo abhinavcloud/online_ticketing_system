@@ -47,3 +47,8 @@
 - PII 
 - GDPR Compliance
 - Fault Tolerance
+
+---
+
+### Assumptions
+- Seat prices under a category are fixed for each category and do not vary inside each category
