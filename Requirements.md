@@ -12,9 +12,9 @@
 - User must be able to browse by Events or Performers or Venue for each location
 
 - User must be able to see all the details by
- - Events (DateTime, Performer, Ticket Price by Category, Seat Map if applicable)
- - Performers (Events by Date Time should redirect to specific event, Venue)
- - Venue (Events and Performers by Date Time should redirect to specific event)
+ * Events (DateTime, Performer, Ticket Price by Category, Seat Map if applicable)
+ * Performers (Events by Date Time should redirect to specific event, Venue)
+ * Venue (Events and Performers by Date Time should redirect to specific event)
 
 - User must be able to select the number of tickets and the total price should be diplsayed and on click of "Book Ticket" should redirect to Payment Gateway
 
