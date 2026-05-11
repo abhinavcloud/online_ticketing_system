@@ -46,4 +46,4 @@
 - Payment Gateway integration and actual Payment
 - PII 
 - GDPR Compliance
-- Fault Tolera
+- Fault Tolerance
