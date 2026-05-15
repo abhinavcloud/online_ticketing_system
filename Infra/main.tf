@@ -10,7 +10,7 @@ module "Network" {
     source = "./Network/"
     common_tags = local.common_tags
     vpc_cidr    = var.vpc_cidr
-    az_name_tag = join(",", data.aws_availability_zones.available.names)
+    az_name_tag = join(",", data.aws_availability_zones.az.names)
     Region = data.aws_region.current.name
 
 }
