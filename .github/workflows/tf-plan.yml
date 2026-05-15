@@ -1,4 +1,4 @@
-name: Terraform Plan and Apply
+name: Terraform Plan
 
 description: This is a reusable workflow designed to initialise terraform and run terraform plan and upload the plan as an artifact
 
@@ -18,7 +18,7 @@ defaults:
 
 
 jobs:
-    terraform-plan-apply:
+    terraform-plan:
         runs-on: ubuntu-latest
         
         steps:
