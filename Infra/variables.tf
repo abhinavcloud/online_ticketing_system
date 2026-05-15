@@ -4,6 +4,8 @@ variable "vpc_cidr" {
 
 }
 
+
+
 variable "Environment" {
   type = string
   default = "demo"

@@ -13,4 +13,6 @@ module "Network" {
     az_name_tag = join(",", data.aws_availability_zones.az.names)
     Region = data.aws_region.current.name
 
+
+
 }

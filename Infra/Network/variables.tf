@@ -28,3 +28,15 @@ variable common_tags {
   description = "Common tags for resources"
   type        = map(string)
 } 
+
+
+
+variable "private_subnets" {
+  default = {
+    "private_subnet_1" = 0
+    "private_subnet_2" = 1
+    "private_subnet_3" = 2
+  }
+}
+
+
