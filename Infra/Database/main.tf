@@ -11,7 +11,7 @@ resource "aws_rds_cluster" "online-ticketing-system" {
   cluster_identifier = "online-ticketing-system"
   engine             = "aurora-postgresql"
   engine_mode        = "provisioned"
-  ngine_version     = "17.7"
+  engine_version     = "17.7"
   database_name      = "online-ticketing-system"
   master_username    = "test" # to be changed later as secret
   master_password    = "must_be_eight_characters" # to be changed later as secret
