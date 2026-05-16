@@ -1,5 +1,3 @@
-#Created by: Abhinav Kumar (abhinav@abhinav-cloud.com)
-#Version 1.0
 
 variable "vpc_name" {
   type    = string
@@ -18,13 +16,15 @@ variable "Region" {
   type        = string
 }
 
-variable az_name_tag {
-  description = "Comma-separated list of Availability Zones"
-  type        = string
+
+
+variable "availability_zone" {
+  description = "list of availbility zones"
+  type = list(string)
 }
 
 
-variable common_tags {
+variable "common_tags" {
   description = "Common tags for resources"
   type        = map(string)
 } 

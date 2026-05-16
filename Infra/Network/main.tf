@@ -16,13 +16,12 @@ resource "aws_vpc" "vpc" {
   
 }
 
-
 # Subnets
 resource "aws_subnet" "private_subnets" {
   for_each = var.private_subnets # using for_each to create 3 subnets for each item in the private subnet list variable
   vpc_id              = aws_vpc.vpc.id
   cidr_block = cidrsubnet(var.vpc_cidr, 8, each.value + 100)
-  availability_zone   = data.aws_availability_zones.available.names[each.value]
+  availability_zone   = var.availability_zone[each.value]
     
   tags = merge(
     var.common_tags,
@@ -44,7 +43,6 @@ resource "aws_route_table" "private_route_table" {
     {
     Name        = "${each.key}"
     Region = var.Region
-    AvailabilityZones = var.az_name_tag
     } 
   )
 }
@@ -64,7 +62,7 @@ resource "aws_internet_gateway" "igw" {
 
 # Create a regional NAT Gatway
 resource "aws_nat_gateway" "regional_nat" {
-  vpc_id            = aws_vpc.example.id
+  vpc_id            = aws_vpc.vpc.id
   availability_mode = "regional"
 }
 
