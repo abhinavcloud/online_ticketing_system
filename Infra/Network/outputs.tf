@@ -1,3 +1,3 @@
 output "subnet_group" {
-    value = aws_subnet.private_subnets.id
+    value = aws_subnet.private_subnets[each.key]
 }
