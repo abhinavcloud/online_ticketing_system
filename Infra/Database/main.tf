@@ -23,7 +23,7 @@ resource "aws_rds_cluster_instance" "writer_instance" {
   instance_class     = "db.serverless"
   engine             = aws_rds_cluster.online-ticketing-system.engine
   engine_version     = aws_rds_cluster.online-ticketing-system.engine_version
-  availibility_zone = var.availability_zones[0]
+  availability_zone = var.availability_zones[0]
   promotion_tier = 0
 }
 
@@ -33,7 +33,7 @@ resource "aws_rds_cluster_instance" "reader_instance_01" {
   instance_class     = "db.serverless"
   engine             = aws_rds_cluster.online-ticketing-system.engine
   engine_version     = aws_rds_cluster.online-ticketing-system.engine_version
-  availibility_zone = var.availability_zones[1]
+  availability_zone = var.availability_zones[1]
   promotion_tier = 1
   depends_on = [aws_rds_cluster_instance.writer_instance]
 }
@@ -44,7 +44,7 @@ resource "aws_rds_cluster_instance" "reader_instance_02" {
   instance_class     = "db.serverless"
   engine             = aws_rds_cluster.online-ticketing-system.engine
   engine_version     = aws_rds_cluster.online-ticketing-system.engine_version
-  availibility_zone = var.availability_zones[2]
+  availability_zone = var.availability_zones[2]
   promotion_tier = 1
   depends_on = [aws_rds_cluster_instance.writer_instance]
 }
