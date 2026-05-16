@@ -49,9 +49,29 @@ resource "aws_route_table" "private_route_table" {
   )
 }
 
+# Map route tables to subnets.
 resource "aws_route_table_association" "private" {
   for_each = var.private_subnets
   route_table_id = aws_route_table.private_route_table[each.key].id
   subnet_id      = aws_subnet.private_subnets[each.key].id
   
+}
+
+# Create an internet gateway for the VPC
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.vpc.id
+}
+
+# Create a regional NAT Gatway
+resource "aws_nat_gateway" "regional_nat" {
+  vpc_id            = aws_vpc.example.id
+  availability_mode = "regional"
+}
+
+# Create a route for each route table and associate regional NAT Gateway to it
+resource "aws_route" "private_route" {
+  for_each = var.private_subnets
+  route_table_id = aws_route_table.private_route_table[each.key].id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id = aws_nat_gateway.regional_nat.id
 }
