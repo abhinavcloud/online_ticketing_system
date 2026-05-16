@@ -19,4 +19,5 @@ module "Database" {
 
     source = "./Database/"
     availability_zones   = data.aws_availability_zones.az.names
+    subnet_group = var.subnet_group
 }
