@@ -27,7 +27,6 @@ resource "aws_subnet" "private_subnets" {
     {
     Name        = "${each.key}"
     Region = var.Region
-    AvailabilityZones = var.az_name_tag
     } 
   )
 }
