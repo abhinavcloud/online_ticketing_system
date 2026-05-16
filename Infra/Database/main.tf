@@ -19,20 +19,20 @@ resource "aws_rds_cluster" "online_ticketing_system" {
 
 # Creating the writer instance in AZ 1
 resource "aws_rds_cluster_instance" "writer_instance" {
-  cluster_identifier = aws_rds_cluster.example.id
+  cluster_identifier = aws_rds_cluster.online_ticketing_system.id
   instance_class     = "db.serverless"
-  engine             = aws_rds_cluster.example.engine
-  engine_version     = aws_rds_cluster.example.engine_version
+  engine             = aws_rds_cluster.online_ticketing_system.engine
+  engine_version     = aws_rds_cluster.online_ticketing_system.engine_version
   availibility_zone = var.availability_zones[0]
   promotion_tier = 0
 }
 
 # Creating the reader instance in AZ 2
 resource "aws_rds_cluster_instance" "reader_instance_01" {
-  cluster_identifier = aws_rds_cluster.example.id
+  cluster_identifier = aws_rds_cluster.online_ticketing_system.id
   instance_class     = "db.serverless"
-  engine             = aws_rds_cluster.example.engine
-  engine_version     = aws_rds_cluster.example.engine_version
+  engine             = aws_rds_cluster.online_ticketing_system.engine
+  engine_version     = aws_rds_cluster.online_ticketing_system.engine_version
   availibility_zone = var.availability_zones[1]
   promotion_tier = 1
   depends_on = [aws_rds_cluster_instance.writer_instance]
@@ -40,10 +40,10 @@ resource "aws_rds_cluster_instance" "reader_instance_01" {
 
 # Creating the reader instance in AZ 3
 resource "aws_rds_cluster_instance" "reader_instance_02" {
-  cluster_identifier = aws_rds_cluster.example.id
+  cluster_identifier = aws_rds_cluster.online_ticketing_system.id
   instance_class     = "db.serverless"
-  engine             = aws_rds_cluster.example.engine
-  engine_version     = aws_rds_cluster.example.engine_version
+  engine             = aws_rds_cluster.online_ticketing_system.engine
+  engine_version     = aws_rds_cluster.online_ticketing_system.engine_version
   availibility_zone = var.availability_zones[2]
   promotion_tier = 1
   depends_on = [aws_rds_cluster_instance.writer_instance]
