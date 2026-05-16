@@ -18,7 +18,7 @@ variable "Region" {
 
 
 
-variable "availability_zone" {
+variable "availability_zones" {
   description = "list of availbility zones"
   type = list(string)
 }
