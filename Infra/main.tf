@@ -26,3 +26,11 @@ module "Database" {
     master_username = var.master_username
     master_password = var.master_password
 }
+
+module "Compute" {
+    source = "./Compute/"
+    db_proxy_id = module.Database.db_proxy_id
+    region = data.aws_region.current.id
+    account_id = var.account_id
+    
+}
