@@ -61,6 +61,7 @@ resource "aws_elasticache_serverless_cache" "browse_cache" {
   snapshot_retention_limit = 1
   security_group_ids       = [aws_security_group.elasticache_sg.id]
   subnet_ids               = var.subnet_group
+  user_group_id = aws_elasticache_user_group.elasticache_user_group.id
 }
 
 
@@ -84,6 +85,7 @@ resource "aws_elasticache_serverless_cache" "active_users" {
   snapshot_retention_limit = 1
   security_group_ids       = [aws_security_group.elasticache_sg.id]
   subnet_ids               = var.subnet_group
+  user_group_id = aws_elasticache_user_group.elasticache_user_group.id
 }
 
 
@@ -107,4 +109,5 @@ resource "aws_elasticache_serverless_cache" "seat_lock" {
   snapshot_retention_limit = 1
   security_group_ids       = [aws_security_group.elasticache_sg.id]
   subnet_ids               = var.subnet_group
+  user_group_id = aws_elasticache_user_group.elasticache_user_group.id
 }

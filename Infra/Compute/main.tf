@@ -49,10 +49,42 @@ resource "aws_iam_policy" "lambda_rds_proxy_policy" {
         "rds:DescribeDBProxyTargets",
         "rds:DescribeDBProxyTargetGroups"
       ],
-      "Resource": "arn:aws:rds:${var.region}:${var.account_id}:db-proxy:${var.db_proxy_id}/*"
+      "Resource": "*"
     }
   ]
   })
+}
+
+# Create an iam policy to access the elasticache serveless clusters
+resource "aws_iam_policy" "lambda_elasticache_policy" {
+  name        = "lambda-elasticache-proxy"
+  description = "Allow Lambda to access elasticache clusters"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    "Statement": [
+    {
+      "Sid": "ElastiCacheServerlessIamAuthConnect",
+      "Effect": "Allow",
+      "Action": "elasticache:Connect",
+      "Resource": [var.browse_cache, var.active_user_lock_cache, var.seat_lock_cache, var.user]
+    }
+  ]
+},
+    {
+      "Sid": "ElastiCacheReadOnlyDiscovery",
+      "Effect": "Allow",
+      "Action": [
+        "elasticache:DescribeServerlessCaches",
+        "elasticache:DescribeUsers",
+        "rds:elasticache:DescribeUserGroups"
+      ],
+      "Resource": "*"
+
+      
+    }
+  
+  )
 }
 
 
@@ -63,10 +95,17 @@ resource "aws_iam_role" "lambda_role" {
 }
 
 # Create a lambda role policy attachement with accesing RDS proxy policy
-resource "aws_iam_role_policy_attachment" "lambda_attach_dynamodb" {
+resource "aws_iam_role_policy_attachment" "lambda_attach_rds_proxy" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = aws_iam_policy.lambda_rds_proxy_policy.arn
 }
+
+# Create a lambda role policy attachement with accesing Elasticache
+resource "aws_iam_role_policy_attachment" "lambda_attach_elasticache" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = aws_iam_policy.lambda_elasticache_policy.arn
+}
+
 
 
 # Create a lambda role policy attachement with Basic Execution Policy for accessing Cloudwatch

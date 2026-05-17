@@ -31,11 +31,14 @@ module "Database" {
 
 module "Compute" {
     source = "./Compute/"
-    db_proxy_id = module.Database.db_proxy_id
+    db_proxy_id = split(":", module.Database.db_proxy_arn)[6]
     region = data.aws_region.current.id
     account_id = var.account_id
     vpc_id = module.Network.vpc_id
-
+    browse_cache = module.Cache.serverless_cache_browse
+    active_user_lock_cache= module.Cache.serverless_active_user_lock
+    seat_lock_cache = module.Cache.serverless_seat_lock
+    user = module.Cache.user
 }
 
 module "Cache" {

@@ -1,3 +1,3 @@
-output "db_proxy_id" {
-    value = aws_db_proxy.rds_proxy.id
+output "db_proxy_arn" {
+    value = aws_db_proxy.rds_proxy.arn
 }
