@@ -29,6 +29,19 @@ module "Database" {
 
 }
 
+
+# Create a Security Group for Lambda 
+resource "aws_security_group" "lambda_sg" {
+  name        = "lambda-sg"
+  description = "Allow TLS inbound traffic from lambda"
+  vpc_id      = module.Network.vpc_id
+
+  tags = {
+    Application = "Elasticache"
+    Type = "Security_Group"
+  }
+}
+
 module "Compute" {
     source = "./Compute/"
     db_proxy_id = split(":", module.Database.db_proxy_arn)[6]
@@ -44,6 +57,6 @@ module "Compute" {
 module "Cache" {
     source = "./Cache/"
     vpc_id = module.Network.vpc_id
-    referenced_security_group_id = module.Compute.lambda_sg
+    referenced_security_group_id = aws_security_group.lambda_sg.id
     subnet_group = [module.Network.subnet_01, module.Network.subnet_02, module.Network.subnet_03]
 }

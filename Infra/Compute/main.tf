@@ -1,28 +1,3 @@
-# Create a lambda policy for assume lambda role
-
-resource "aws_iam_policy" "lambda_assume_role_policy" {
-  name        = "lambda-assume-role-policy"
-  description = "Allow Lambda to access DynamoDB short URL table"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-       {
-    effect = "Allow"
-
-    principals =  {
-      type        = "Service"
-      identifiers = ["lambda.amazonaws.com"]
-    }
-
-    actions = ["sts:AssumeRole"]
-  }
-    ]
-  })
-}
-
-
-
 # Create a lambda policy for accessing RDS Proxy
 resource "aws_iam_policy" "lambda_rds_proxy_policy" {
   name        = "lambda-rds-proxy"
@@ -67,23 +42,23 @@ resource "aws_iam_policy" "lambda_elasticache_policy" {
       "Sid": "ElastiCacheServerlessIamAuthConnect",
       "Effect": "Allow",
       "Action": "elasticache:Connect",
+    
       "Resource": [var.browse_cache, var.active_user_lock_cache, var.seat_lock_cache, var.user]
-    }
-  ]
-},
+    },
+
     {
       "Sid": "ElastiCacheReadOnlyDiscovery",
       "Effect": "Allow",
       "Action": [
         "elasticache:DescribeServerlessCaches",
         "elasticache:DescribeUsers",
-        "rds:elasticache:DescribeUserGroups"
+        "elasticache:DescribeUserGroups"
       ],
       "Resource": "*"
-
-      
-    }
-  
+    
+        }
+      ]
+  }
   )
 }
 
@@ -97,7 +72,21 @@ resource "aws_iam_role" "lambda_role" {
 # Create a lambda role policy attachement with accesing RDS proxy policy
 resource "aws_iam_role_policy_attachment" "lambda_attach_rds_proxy" {
   role       = aws_iam_role.lambda_role.name
-  policy_arn = aws_iam_policy.lambda_rds_proxy_policy.arn
+  policy_arn = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+       {
+    effect = "Allow"
+
+    principals =  {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+    ]
+  })
 }
 
 # Create a lambda role policy attachement with accesing Elasticache
@@ -114,17 +103,7 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# Create a Security Group for Lambda 
-resource "aws_security_group" "lambda_sg" {
-  name        = "lambda-sg"
-  description = "Allow TLS inbound traffic from lambda"
-  vpc_id      = var.vpc_id
 
-  tags = {
-    Application = "Elasticache"
-    Type = "Security_Group"
-  }
-}
 
 # Create an Ingress rule for Lambda Security Group
 
