@@ -22,4 +22,5 @@ module "Database" {
     subnet_group = [module.Network.subnet_01, module.Network.subnet_02, module.Network.subnet_03]
     vpc_id = var.vpc_id
     Region = data.aws_region.current.id
+    account_id = var.account_id
 }

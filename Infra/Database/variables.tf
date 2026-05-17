@@ -17,3 +17,8 @@ variable "Region" {
   description = "AWS Region Name"
   type        = string
 }
+
+variable "account_id" {
+    description = "AWS Account Id"
+    type = string
+}

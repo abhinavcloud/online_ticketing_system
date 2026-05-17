@@ -22,3 +22,8 @@ locals {
     Application = var.Application
   }
 }
+
+variable "account_id" {
+    description = "AWS Account Id"
+    type = string
+}
