@@ -26,4 +26,5 @@ locals {
 variable "account_id" {
     description = "AWS Account Id"
     type = string
+    default = "1234"
 }
