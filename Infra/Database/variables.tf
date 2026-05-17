@@ -7,3 +7,8 @@ variable "subnet_group" {
     description = "list of subnet groups"
     type = list(string)
 }
+
+variable "vpc_id" {
+    description = "VPC Id"
+    type = string
+}
