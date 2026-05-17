@@ -211,7 +211,7 @@ resource "aws_db_proxy_default_target_group" "rds_proxy_target_group" {
 }
 
 resource "aws_db_proxy_target" "rds_proxy_target" {
-  db_cluster_identifier  = aws_rds_cluster.online-ticketing-system.identifier
+  db_cluster_identifier  = aws_rds_cluster.online-ticketing-system.id
   db_proxy_name          = aws_db_proxy.rds_proxy.name
   target_group_name      = aws_db_proxy_default_target_group.rds_proxy_target_group.name
 
