@@ -19,9 +19,6 @@ jobs:
     terraform-plan:
         runs-on: ubuntu-latest
 
-        defaults:
-          working_directory: ./Infra
-
         env:
           TF_VAR_master_username = ${{secrets.AURORA_USERNAME}}
           TF_VAR_master_password = ${{secrets.AURORA_PASSWORD}}
