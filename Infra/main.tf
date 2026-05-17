@@ -23,4 +23,6 @@ module "Database" {
     vpc_id = var.vpc_id
     region = data.aws_region.current.id
     account_id = var.account_id
+    master_username = var.master_username
+    master_password = var.master_password
 }

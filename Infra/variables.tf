@@ -26,5 +26,15 @@ locals {
 variable "account_id" {
     description = "AWS Account Id"
     type = string
-    default = "1234"
+
+}
+
+variable "master_username" {
+    description = "Aurora DB Master Username"
+    type = string
+}
+
+variable "master_password" {
+    description = "Aurora DB Master Password"
+    type = string
 }

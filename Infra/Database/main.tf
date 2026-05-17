@@ -36,8 +36,8 @@ resource "aws_rds_cluster" "online-ticketing-system" {
   engine_mode        = "provisioned"
   engine_version     = "17.7"
   database_name      = "online-ticketing-system"
-  master_username    = "test" # to be changed later as secret
-  master_password    = "must_be_eight_characters" # to be changed later as secret
+  master_username    = var.master_username
+  master_password    = var.master_passwrod
   storage_encrypted  = true
   db_subnet_group_name = aws_db_subnet_group.aurora_db_subnet_group.name
   enable_http_endpoint = false
