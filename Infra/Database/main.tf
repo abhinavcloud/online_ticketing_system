@@ -152,13 +152,13 @@ resource "aws_security_group" "rds_proxy_sg" {
 
 # Creating an Ingress rule from lambda security group to rds proxy security group
 #This is commented out to be taken up later when we create the lambda resources and respective security group
-#resource "aws_vpc_security_group_ingress_rule" "rds_proxy_sg_ingress_rule" {
-#  security_group_id = aws_security_group.rds_proxy_sg.id
-#  referenced_security_group_id = aws_security_group.lambda_sg.id
-#  from_port         = 5432
-#  ip_protocol       = "tcp"
-#  to_port           = 5432
-#}
+resource "aws_vpc_security_group_ingress_rule" "rds_proxy_sg_ingress_rule" {
+  security_group_id = aws_security_group.rds_proxy_sg.id
+  referenced_security_group_id = var.referenced_security_group_id
+  from_port         = 5432
+  ip_protocol       = "tcp"
+  to_port           = 5432
+}
 
 # Creating an Egress rule from RDS Proxy security group to Aurora security group
 resource "aws_vpc_security_group_egress_rule" "rds_proxy_sg_egress_rule" {

@@ -13,3 +13,8 @@ variable "account_id" {
     description = "AWS Account Id"
     type = string
 }
+
+variable "vpc_id" {
+    description = "VPC Id"
+    type = string
+}

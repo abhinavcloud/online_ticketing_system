@@ -76,11 +76,23 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution_policy" {
 }
 
 # Create a Security Group for Lambda 
+resource "aws_security_group" "lambda_sg" {
+  name        = "lambda-sg"
+  description = "Allow TLS inbound traffic from lambda"
+  vpc_id      = var.vpc_id
 
+  tags = {
+    Application = "Elasticache"
+    Type = "Security_Group"
+  }
+}
 
 # Create an Ingress rule for Lambda Security Group
 
-# Create an Egress rule for Lmabda Security Group
+# Create an Egress rule for Lmabda Security Group to Elasticache
+
+
+# Create and Egress rule for Lambda Security Group to RDS Proxy
 
 
 # Create a Lambda with IAM Role and Security Group (Browse Service)

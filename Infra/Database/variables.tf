@@ -32,3 +32,8 @@ variable "master_password" {
     description = "Aurora DB Master Password"
     type = string
 }
+
+variable "referenced_security_group_id" {
+    description = "Lambda Security Group as Ingress to RDS Proxy Security Group"
+    type = string
+}

@@ -25,6 +25,8 @@ module "Database" {
     account_id = var.account_id
     master_username = var.master_username
     master_password = var.master_password
+    referenced_security_group_id = module.Compute.lambda_sg
+
 }
 
 module "Compute" {
@@ -32,5 +34,13 @@ module "Compute" {
     db_proxy_id = module.Database.db_proxy_id
     region = data.aws_region.current.id
     account_id = var.account_id
-    
+    vpc_id = module.Network.vpc_id
+
+}
+
+module "Cache" {
+    source = "./Cache/"
+    vpc_id = module.Network.vpc_id
+    referenced_security_group_id = module.Compute.lambda_sg
+    subnet_group = [module.Network.subnet_01, module.Network.subnet_02, module.Network.subnet_03]
 }
