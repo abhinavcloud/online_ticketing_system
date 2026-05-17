@@ -17,10 +17,10 @@ resource "aws_security_group" "aurora_sg" {
   }
 }
 
-#Creating an Ingress rule to port 5432 to Aurora Cluster
+#Creating an Ingress rule to port 5432 to Aurora Cluster from rds proxy security group
 resource "aws_vpc_security_group_ingress_rule" "aurora_sg_ingress_rule" {
   security_group_id = aws_security_group.aurora_sg.id
-  cidr_ipv4         = aws_vpc.main.cidr_block
+  referenced_security_group_id = aws_security_group.rds_proxy_sg.id
   from_port         = 5432
   ip_protocol       = "tcp"
   to_port           = 5432
@@ -41,7 +41,7 @@ resource "aws_rds_cluster" "online-ticketing-system" {
   storage_encrypted  = true
   db_subnet_group_name = aws_db_subnet_group.aurora_db_subnet_group.name
   enable_http_endpoint = false
-  vpc_security_group_ids = [aws_security_group.aurora_sg]
+  vpc_security_group_ids = [aws_security_group.aurora_sg.id]
   iam_database_authentication_enabled = true
   serverlessv2_scaling_configuration {
     max_capacity             = 1.0
@@ -110,7 +110,7 @@ resource "aws_iam_policy" "rds_proxy_allow_aurora_db_connection" {
 })
 }
 
-# Create an IAM role for RDS Proxy to connect to Aurora DB via IAM Authentication
+# Create an IAM Assume role policy for RDS Proxy to to assume the role as principal
 data "aws_iam_policy_document" "rds_proxy_assume_role" {
   statement {
     effect = "Allow"
@@ -139,13 +139,87 @@ resource "aws_iam_role_policy_attachment" "attach_rds_proxy_allow_aurora_db_conn
 
 
 # Create a security group for RDS Proxy to Allow Egress to Aurora DB Cluster and Ingress from Lambda
+resource "aws_security_group" "rds_proxy_sg" {
+  name        = "rds_proxy_sg"
+  description = "Allow TLS inbound traffic from lambda and outbound traffic to aurora cluster"
+  vpc_id      = var.vpc_id
 
+  tags = {
+    Application = "RDS_Proxy"
+    Type = "Security_Group"
+  }
+}
 
+# Creating an Ingress rule from lambda security group to rds proxy security group
+#This is commented out to be taken up later when we create the lambda resources and respective security group
+#resource "aws_vpc_security_group_ingress_rule" "rds_proxy_sg_ingress_rule" {
+#  security_group_id = aws_security_group.rds_proxy_sg.id
+#  referenced_security_group_id = aws_security_group.lambda_sg.id
+#  from_port         = 80
+#  ip_protocol       = "tcp"
+#  to_port           = 80
+#}
+
+# Creating an Egress rule from RDS Proxy security group to Aurora security group
+resource "aws_vpc_security_group_egress_rule" "rds_proxy_sg_egress_rule" {
+  security_group_id = aws_security_group.rds_proxy_sg.id
+
+ referenced_security_group_id  = aws_security_group.aurora_sg.id
+  from_port   = 5432
+  ip_protocol = "tcp"
+  to_port     = 5432
+}
 
 # Create a RDS Proxy with end to end IAM Authentication so that db credentials are not needed in Secrets Manager
+resource "aws_db_proxy" "rds_proxy" {
+  name                   = "rds_proxy"
+  debug_logging          = false
+  engine_family          = "POSTGRESQL"
+  idle_client_timeout    = 1200
+  require_tls            = true
+  role_arn               = aws_iam_role.rds_proxy_role.arn
+  vpc_security_group_ids = [aws_security_group.rds_proxy_sg.id]
+  vpc_subnet_ids         = var.subnet_group
+  default_auth_scheme = "IAM_AUTH"
+
+  auth {
+    description = "End to End IAM Authentication"
+    iam_auth    = "REQUIRED"
+  }
+
+  tags = {
+    Name = "RDS_Proxy"
+    Key  = "RDS_Proxy"
+  }
+}
 
 
+# Create a RDS Proxy Target Group and Target to the Aurora DB Cluster
 
-# Create a proxy endpoint for Lambdas to connect to
+resource "aws_db_proxy_default_target_group" "rds_proxy_target_group" {
+  db_proxy_name = aws_db_proxy.rds_proxy.name
+
+  connection_pool_config {
+    connection_borrow_timeout    = 120
+    init_query                   = "SET x=1, y=2"
+    max_connections_percent      = 100
+    max_idle_connections_percent = 50
+    session_pinning_filters      = ["EXCLUDE_VARIABLE_SETS"]
+  }
+
+  lifecycle {
+    replace_triggered_by = [aws_db_proxy.rds_proxy.id]
+  }
+}
+
+resource "aws_db_proxy_target" "rds_proxy_target" {
+  db_cluster_identifier  = aws_rds_cluster.online-ticketing-system.identifier
+  db_proxy_name          = aws_db_proxy.rds_proxy.name
+  target_group_name      = aws_db_proxy_default_target_group.rds_proxy_target_group.name
+
+  lifecycle {
+    replace_triggered_by = [aws_db_proxy.example.id]
+  }
+}
 
 
