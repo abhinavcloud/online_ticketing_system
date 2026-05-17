@@ -103,7 +103,7 @@ resource "aws_iam_policy" "rds_proxy_allow_aurora_db_connection" {
                 "rds-db:connect"
             ],
             "Resource": [
-                "arn:aws:rds-db:us-east-2:111122223333:dbuser:cluster-ABCDEFGHIJKL01234/db_user"
+                "arn:aws:rds-db:${var.Region}:${var.account_id}:dbuser:${aws_rds_cluster.online-ticketing-system.cluster_resource_id}/*"
             ]
         }
     ]
@@ -201,7 +201,6 @@ resource "aws_db_proxy_default_target_group" "rds_proxy_target_group" {
 
   connection_pool_config {
     connection_borrow_timeout    = 120
-    init_query                   = "SET x=1, y=2"
     max_connections_percent      = 100
     max_idle_connections_percent = 50
     session_pinning_filters      = ["EXCLUDE_VARIABLE_SETS"]
@@ -218,7 +217,7 @@ resource "aws_db_proxy_target" "rds_proxy_target" {
   target_group_name      = aws_db_proxy_default_target_group.rds_proxy_target_group.name
 
   lifecycle {
-    replace_triggered_by = [aws_db_proxy.example.id]
+    replace_triggered_by = [aws_db_proxy.rds_proxy.id]
   }
 }
 
