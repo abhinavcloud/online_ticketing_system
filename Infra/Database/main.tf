@@ -103,7 +103,7 @@ resource "aws_iam_policy" "rds_proxy_allow_aurora_db_connection" {
                 "rds-db:connect"
             ],
             "Resource": [
-                "arn:aws:rds-db:${var.Region}:${var.account_id}:dbuser:${aws_rds_cluster.online-ticketing-system.cluster_resource_id}/*"
+                "arn:aws:rds-db:${var.region}:${var.account_id}:dbuser:${aws_rds_cluster.online-ticketing-system.cluster_resource_id}/*"
             ]
         }
     ]

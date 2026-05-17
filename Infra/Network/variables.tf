@@ -11,8 +11,8 @@ variable "vpc_cidr" {
 
 
 
-variable "Region" {
-  description = "AWS Region Name"
+variable "region" {
+  description = "AWS region Name"
   type        = string
 }
 

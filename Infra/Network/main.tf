@@ -9,7 +9,7 @@ resource "aws_vpc" "vpc" {
     var.common_tags,
     {
     Name        = "${var.vpc_name}"
-    Region = var.Region
+    region = var.region
     } 
   )
   
@@ -26,7 +26,7 @@ resource "aws_subnet" "private_subnets" {
     var.common_tags,
     {
     Name        = "${each.key}"
-    Region = var.Region
+    region = var.region
     } 
   )
 }
@@ -40,7 +40,7 @@ resource "aws_route_table" "private_route_table" {
     var.common_tags,
     {
     Name        = "${each.key}"
-    Region = var.Region
+    region = var.region
     } 
   )
 }
