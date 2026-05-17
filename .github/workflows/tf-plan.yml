@@ -17,9 +17,16 @@ defaults:
 
 
 
+
+
 jobs:
     terraform-plan:
         runs-on: ubuntu-latest
+
+        env:
+          TF_VAR_master_username = ${{secrets.AURORA_USERNAME}}
+          TF_VAR_master_password = ${{secrets.AURORA_PASSWORD}}
+          TF_VAR_account_id = ${{secrets.ACCOUNT_ID}}
         
         steps:
 
