@@ -63,4 +63,4 @@ jobs:
                 if-no-files-found: error
 
             - name: terraform-apply
-              run: terraform apply tfplan -auto-approve
+              run: terraform apply -auto-approve tfplan
