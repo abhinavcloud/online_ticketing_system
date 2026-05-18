@@ -151,7 +151,7 @@ resource "aws_vpc_security_group_egress_rule" "elasticache_sg_egress_rule" {
 # Create a Lambda with IAM Role and Security Group (Browse Service)
 data "archive_file" "browse_layer_zip" {
   type        = "zip"
-  source_dir  = "${path.module}/../../Code/browse_service_layer/python"
+  source_dir  = "${path.module}/../../Code/browse_service_layer"
   output_path = "${path.module}/artifacts/browse_service_layer.zip"
 }
 
