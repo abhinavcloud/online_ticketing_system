@@ -4,7 +4,7 @@ output "serverless_cache_browse" {
 
 
 output "browse_cache_endpoint" {
-  value = aws_elasticache_serverless_cache.browse_cache.endpoint
+  value = aws_elasticache_serverless_cache.browse_cache.endpoint[0].address
 }
 
 
@@ -26,7 +26,7 @@ output "serverless_active_user_lock" {
 
 
 output "active_users_cache_endpoint" {
-  value = aws_elasticache_serverless_cache.active_users.endpoint
+  value = aws_elasticache_serverless_cache.active_users.endpoint[0].address
 }
 
 output "active_users_cache_port" {
@@ -46,7 +46,7 @@ output "serverless_seat_lock" {
 
 
 output "seat_lock_cache_endpoint" {
-  value = aws_elasticache_serverless_cache.seat_lock.endpoint
+  value = aws_elasticache_serverless_cache.seat_lock.endpoint[0].address
 }
 
 output "seat_lock_cache_port" {
