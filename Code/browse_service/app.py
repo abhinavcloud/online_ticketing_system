@@ -1,8 +1,8 @@
 import os
 import json
 import time
-from typing import Any, Optional, List, Dict
 import logging
+from typing import Any, Optional, Callable
 
 import boto3
 import psycopg2
@@ -10,8 +10,8 @@ import psycopg2.extras
 from cachetools import TTLCache
 
 try:
-    import redis
-except Exception:
+    import redis  # redis-py
+except Exception:  # pragma: no cover
     redis = None
 
 from botocore.session import Session
@@ -21,22 +21,26 @@ from botocore.awsrequest import AWSRequest
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-# Warm-container caches
-_db_conn = None
-_db_conn_refresh_at = 0
+# ------------------------------------------------------------
+# Warm-container caches (persist for same Lambda execution env)
+# ------------------------------------------------------------
+_DB_CONN = None
+_DB_REFRESH_AT = 0.0
 
-_valkey = None
-_valkey_refresh_at = 0
+_VALKEY = None
+_VALKEY_REFRESH_AT = 0.0
 
-_local = TTLCache(maxsize=1024, ttl=10)
+# Small local cache for hot keys within the same warm container
+_LOCAL_CACHE = TTLCache(maxsize=1024, ttl=10)
 
 
-# ---------------------------
+# ----------------------------
 # HTTP helpers
-# ---------------------------
-def response(status: int, body: Any):
+# ----------------------------
+
+def _json_response(status_code: int, body: Any) -> dict[str, Any]:
     return {
-        "statusCode": status,
+        "statusCode": status_code,
         "headers": {
             "content-type": "application/json",
             "access-control-allow-origin": "*",
@@ -45,23 +49,45 @@ def response(status: int, body: Any):
     }
 
 
-def qsp(event: Dict[str, Any]) -> Dict[str, str]:
+def _http_method(event: dict[str, Any]) -> str:
+    # HTTP API (v2)
+    m = event.get("requestContext", {}).get("http", {}).get("method")
+    if m:
+        return m
+    # REST API (v1)
+    return event.get("httpMethod", "")
+
+
+def _http_path(event: dict[str, Any]) -> str:
+    # HTTP API (v2)
+    p = event.get("rawPath")
+    if p:
+        return p.rstrip("/")
+    # REST API (v1)
+    return (event.get("path") or "").rstrip("/")
+
+
+def _query_params(event: dict[str, Any]) -> dict[str, str]:
     return event.get("queryStringParameters") or {}
 
 
-def method(event: Dict[str, Any]) -> str:
-    return event.get("requestContext", {}).get("http", {}).get("method") or event.get("httpMethod", "")
+def _path_params(event: dict[str, Any]) -> dict[str, str]:
+    return event.get("pathParameters") or {}
 
 
-def path(event: Dict[str, Any]) -> str:
-    return (event.get("rawPath") or event.get("path") or "").rstrip("/")
+def _safe_int(s: Optional[str], default: int) -> int:
+    try:
+        return int(s) if s is not None else default
+    except Exception:
+        return default
 
 
-# ---------------------------
+# ----------------------------
 # DB: IAM auth via RDS Proxy
-# ---------------------------
-def _db_token() -> str:
-    """Generate IAM DB auth token used as password. [1](https://boto3.amazonaws.com/v1/documentation/api/1.28.3/reference/services/rds/client/generate_db_auth_token.html)[2](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAMDBAuth.html)"""
+# ----------------------------
+
+def _db_auth_token() -> str:
+    """Generate IAM DB auth token used as the password."""
     region = os.environ["AWS_REGION"]
     host = os.environ["DB_HOST"]
     port = int(os.environ.get("DB_PORT", "5432"))
@@ -71,41 +97,41 @@ def _db_token() -> str:
     return rds.generate_db_auth_token(DBHostname=host, Port=port, DBUsername=user, Region=region)
 
 
-def db_conn():
-    """
-    Reuse connection in warm container.
-    Token lifetime is short; refresh before expiry. [2](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAMDBAuth.html)
-    """
-    global _db_conn, _db_conn_refresh_at
+def _db_conn():
+    """Re-use a DB connection within the warm Lambda container."""
+    global _DB_CONN, _DB_REFRESH_AT
 
     now = time.time()
-    if _db_conn and now < _db_conn_refresh_at:
-        return _db_conn
+    if _DB_CONN is not None and now < _DB_REFRESH_AT:
+        return _DB_CONN
 
     conn = psycopg2.connect(
         host=os.environ["DB_HOST"],
         port=int(os.environ.get("DB_PORT", "5432")),
         dbname=os.environ["DB_NAME"],
         user=os.environ["DB_USER"],
-        password=_db_token(),
+        password=_db_auth_token(),
         sslmode="require",
         connect_timeout=5,
         cursor_factory=psycopg2.extras.RealDictCursor,
     )
     conn.autocommit = True
-    _db_conn = conn
-    _db_conn_refresh_at = now + (14 * 60)  # refresh before 15 min window
+
+    _DB_CONN = conn
+    # IAM token is valid 15 minutes; refresh earlier
+    _DB_REFRESH_AT = now + (14 * 60)
     return conn
 
 
-# ---------------------------
-# Valkey/Redis: IAM auth
-# ---------------------------
+# ----------------------------
+# ElastiCache Serverless (Valkey/Redis): IAM auth
+# ----------------------------
+
 def _elasticache_iam_token(user_id: str, cache_name: str, region: str) -> str:
-    """
-    IAM token is a SigV4 presigned URL, used as password (without http://). [3](https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/auth-iam.html)
-    """
-    cache_name = cache_name.lower()  # doc note about lowercase cache names [3](https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/auth-iam.html)
+    """Generate SigV4 presigned URL token used as Redis password (without http://)."""
+    cache_name = cache_name.lower()
+
+    # Request: http://{cache_name}/?Action=connect&User={user_id}&ResourceType=ServerlessCache
     url = f"http://{cache_name}/"
     params = {"Action": "connect", "User": user_id, "ResourceType": "ServerlessCache"}
 
@@ -113,17 +139,20 @@ def _elasticache_iam_token(user_id: str, cache_name: str, region: str) -> str:
     sess = Session()
     creds = sess.get_credentials().get_frozen_credentials()
 
-    signer = SigV4QueryAuth(credentials=creds, service_name="elasticache", region_name=region, expires=900)
+    signer = SigV4QueryAuth(
+        credentials=creds,
+        service_name="elasticache",
+        region_name=region,
+        expires=900,
+    )
     signer.add_auth(aws_req)
 
     return aws_req.url.replace("http://", "")
 
 
-def browse_cache():
-    """
-    Optional browse cache client. IAM auth requires TLS and userId==userName. [3](https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/auth-iam.html)
-    """
-    global _valkey, _valkey_refresh_at
+def _browse_cache_client():
+    """Optional Valkey client. Returns None if env vars are missing."""
+    global _VALKEY, _VALKEY_REFRESH_AT
 
     if redis is None:
         return None
@@ -137,75 +166,78 @@ def browse_cache():
         return None
 
     now = time.time()
-    if _valkey and now < _valkey_refresh_at:
-        return _valkey
+    if _VALKEY is not None and now < _VALKEY_REFRESH_AT:
+        return _VALKEY
 
     token = _elasticache_iam_token(user_id=user_id, cache_name=cache_name, region=os.environ["AWS_REGION"])
 
     client = redis.Redis(
         host=endpoint,
         port=int(port),
-        username=user_id,          # IAM-enabled user id; must match username [3](https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/auth-iam.html)
-        password=token,            # SigV4 token used as password [3](https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/auth-iam.html)
-        ssl=True,                  # TLS required for IAM auth [3](https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/auth-iam.html)
+        username=user_id,
+        password=token,
+        ssl=True,
         ssl_cert_reqs=None,
         decode_responses=True,
         socket_connect_timeout=2,
         socket_timeout=2,
     )
 
+    # Validate connectivity
     client.ping()
-    _valkey = client
-    _valkey_refresh_at = now + (14 * 60)
+
+    _VALKEY = client
+    _VALKEY_REFRESH_AT = now + (14 * 60)
     return client
 
 
-def cached_json(key: str, ttl: int, compute_fn):
-    # 1) local warm cache
-    if key in _local:
-        return _local[key]
+def _cached_json(key: str, ttl_seconds: int, compute_fn: Callable[[], Any]) -> Any:
+    # 1) Local warm cache
+    if key in _LOCAL_CACHE:
+        return _LOCAL_CACHE[key]
 
-    # 2) distributed browse cache
-    r = None
+    # 2) Distributed browse cache (optional)
+    client = None
     try:
-        r = browse_cache()
+        client = _browse_cache_client()
     except Exception as e:
         logger.warning("browse cache unavailable: %s", str(e))
 
-    if r:
+    if client:
         try:
-            v = r.get(key)
-            if v:
-                obj = json.loads(v)
-                _local[key] = obj
+            raw = client.get(key)
+            if raw is not None:
+                obj = json.loads(raw)
+                _LOCAL_CACHE[key] = obj
                 return obj
         except Exception as e:
             logger.warning("browse cache read failed: %s", str(e))
 
-    # 3) compute + write back
+    # 3) Compute + write-back
     obj = compute_fn()
-    _local[key] = obj
+    _LOCAL_CACHE[key] = obj
 
-    if r:
+    if client:
         try:
-            r.setex(key, ttl, json.dumps(obj, default=str))
+            client.setex(key, ttl_seconds, json.dumps(obj, default=str))
         except Exception as e:
             logger.warning("browse cache write failed: %s", str(e))
 
     return obj
 
 
-# ---------------------------
-# Queries mapped to your API
-# ---------------------------
-def get_locations(conn, page: int, page_size: int):
-    off = (page - 1) * page_size
+# ----------------------------
+# SQL: API mappings
+# ----------------------------
+
+def _get_locations(conn, page: int, page_size: int) -> dict[str, Any]:
+    offset = (page - 1) * page_size
     with conn.cursor() as cur:
         cur.execute("SELECT count(*) AS c FROM public.locations;")
         total = int(cur.fetchone()["c"])
         cur.execute(
             "SELECT id, name FROM public.locations ORDER BY name ASC LIMIT %s OFFSET %s;",
-            (page_size, off),
+            (page_size, offset),
         )
         rows = cur.fetchall()
 
@@ -217,8 +249,8 @@ def get_locations(conn, page: int, page_size: int):
     }
 
 
-def get_venues(conn, location_id: str, page: int, page_size: int):
-    off = (page - 1) * page_size
+def _get_venues(conn, location_id: str, page: int, page_size: int) -> dict[str, Any]:
+    offset = (page - 1) * page_size
     with conn.cursor() as cur:
         cur.execute("SELECT count(*) AS c FROM public.venues WHERE location_id=%s;", (location_id,))
         total = int(cur.fetchone()["c"])
@@ -230,7 +262,7 @@ def get_venues(conn, location_id: str, page: int, page_size: int):
             ORDER BY name ASC
             LIMIT %s OFFSET %s;
             """,
-            (location_id, page_size, off),
+            (location_id, page_size, offset),
         )
         rows = cur.fetchall()
 
@@ -242,12 +274,8 @@ def get_venues(conn, location_id: str, page: int, page_size: int):
     }
 
 
-def get_performers(conn, location_id: str, page: int, page_size: int):
-    """
-    Your API: performers by location.
-    We derive via events->venue->location and distinct performers.
-    """
-    off = (page - 1) * page_size
+def _get_performers(conn, location_id: str, page: int, page_size: int) -> dict[str, Any]:
+    offset = (page - 1) * page_size
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -276,7 +304,7 @@ def get_performers(conn, location_id: str, page: int, page_size: int):
             ORDER BY p.name ASC
             LIMIT %s OFFSET %s;
             """,
-            (location_id, page_size, off),
+            (location_id, page_size, offset),
         )
         rows = cur.fetchall()
 
@@ -288,11 +316,18 @@ def get_performers(conn, location_id: str, page: int, page_size: int):
     }
 
 
-def list_events(conn, location_id: str, performer_id: Optional[str], venue_id: Optional[str], page: int, page_size: int):
-    off = (page - 1) * page_size
+def _list_events(
+    conn,
+    location_id: str,
+    performer_id: Optional[str],
+    venue_id: Optional[str],
+    page: int,
+    page_size: int,
+) -> dict[str, Any]:
+    offset = (page - 1) * page_size
 
     filters = ["v.location_id = %s"]
-    params: List[Any] = [location_id]
+    params: list[Any] = [location_id]
 
     if performer_id:
         filters.append("ep.performer_id = %s")
@@ -305,7 +340,6 @@ def list_events(conn, location_id: str, performer_id: Optional[str], venue_id: O
     where = " AND ".join(filters)
 
     with conn.cursor() as cur:
-        # total
         cur.execute(
             f"""
             SELECT count(DISTINCT e.id) AS c
@@ -318,12 +352,12 @@ def list_events(conn, location_id: str, performer_id: Optional[str], venue_id: O
         )
         total = int(cur.fetchone()["c"])
 
-        # page data
         cur.execute(
             f"""
-            SELECT DISTINCT e.id, e.name, e.event_date, e.event_type,
-                   v.id AS venue_id, v.name AS venue_name,
-                   l.id AS location_id, l.name AS location_name
+            SELECT DISTINCT
+              e.id, e.name, e.event_date, e.event_type,
+              l.id AS location_id, l.name AS location_name,
+              v.id AS venue_id, v.name AS venue_name
             FROM public.events e
             JOIN public.venues v ON v.id = e.venue_id
             JOIN public.locations l ON l.id = v.location_id
@@ -332,13 +366,12 @@ def list_events(conn, location_id: str, performer_id: Optional[str], venue_id: O
             ORDER BY e.event_date ASC
             LIMIT %s OFFSET %s;
             """,
-            tuple(params + [page_size, off]),
+            tuple(params + [page_size, offset]),
         )
         events = cur.fetchall()
 
-        # performers for returned events
         event_ids = [e["id"] for e in events]
-        perf_map = {str(eid): [] for eid in event_ids}
+        perfs_by_event: dict[str, list[dict[str, str]]] = {str(eid): [] for eid in event_ids}
 
         if event_ids:
             cur.execute(
@@ -351,7 +384,7 @@ def list_events(conn, location_id: str, performer_id: Optional[str], venue_id: O
                 (event_ids,),
             )
             for r in cur.fetchall():
-                perf_map[str(r["event_id"])].append(
+                perfs_by_event[str(r["event_id"])].append(
                     {"performerId": str(r["performer_id"]), "performerName": r["performer_name"]}
                 )
 
@@ -367,14 +400,14 @@ def list_events(conn, location_id: str, performer_id: Optional[str], venue_id: O
                 "category": e.get("event_type"),
                 "location": {"locationId": str(e["location_id"]), "locationName": e["location_name"]},
                 "venue": {"venueId": str(e["venue_id"]), "venueName": e["venue_name"]},
-                "performers": perf_map.get(str(e["id"]), []),
+                "performers": perfs_by_event.get(str(e["id"]), []),
             }
             for e in events
         ],
     }
 
 
-def get_event_details(conn, event_id: str):
+def _event_details(conn, event_id: str) -> Optional[dict[str, Any]]:
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -392,7 +425,6 @@ def get_event_details(conn, event_id: str):
         if not e:
             return None
 
-        # performers
         cur.execute(
             """
             SELECT p.id, p.name
@@ -405,19 +437,19 @@ def get_event_details(conn, event_id: str):
         )
         performers = [{"performerId": str(r["id"]), "performerName": r["name"]} for r in cur.fetchall()]
 
-        # categories + total/available (computed from seats)
+        # ticketCategories computed from event_categories + seats
         cur.execute(
             """
             SELECT
               c.id AS category_id,
               c.name AS category_name,
-              c.price,
-              c.currency,
+              c.price AS price,
+              c.currency AS currency,
               COUNT(s.id) AS total_tickets,
               SUM(CASE WHEN s.status='AVAILABLE' THEN 1 ELSE 0 END) AS available_tickets
             FROM public.event_categories c
             LEFT JOIN public.seats s
-              ON s.category_id = c.id AND s.event_id = c.event_id
+              ON s.event_id = c.event_id AND s.category_id = c.id
             WHERE c.event_id = %s
             GROUP BY c.id, c.name, c.price, c.currency
             ORDER BY c.price DESC;
@@ -425,10 +457,10 @@ def get_event_details(conn, event_id: str):
             (event_id,),
         )
 
-        ticket_categories = []
+        categories = []
         for r in cur.fetchall():
             available = int(r["available_tickets"] or 0)
-            ticket_categories.append(
+            categories.append(
                 {
                     "categoryId": str(r["category_id"]),
                     "categoryName": r["category_name"],
@@ -449,7 +481,7 @@ def get_event_details(conn, event_id: str):
         "location": {"locationId": str(e["location_id"]), "locationName": e["location_name"]},
         "venue": {"venueId": str(e["venue_id"]), "venueName": e["venue_name"]},
         "performers": performers,
-        "ticketCategories": ticket_categories,
+        "ticketCategories": categories,
         "seatMap": {
             "applicable": True,
             "type": "RESERVED_SEATING",
@@ -458,75 +490,76 @@ def get_event_details(conn, event_id: str):
     }
 
 
-# ---------------------------
-# Lambda handler (routing)
-# ---------------------------
-def handler(event, context):
-    try:
-        conn = db_conn()
-    except Exception as e:
-        logger.exception("db connect failed")
-        return response(500, {"error": "DB_CONNECTION_FAILED", "message": str(e)})
+# ----------------------------
+# Lambda handler
+# ----------------------------
 
-    p = path(event)
-    m = method(event)
-    qs = qsp(event)
-    ttl = int(os.environ.get("BROWSE_CACHE_TTL_SECONDS", "30"))
+def handler(event: dict[str, Any], context: Any):
+    p = _http_path(event)
+    m = _http_method(event)
+    qs = _query_params(event)
+
+    ttl = _safe_int(os.environ.get("BROWSE_CACHE_TTL_SECONDS"), 30)
+
+    try:
+        conn = _db_conn()
+    except Exception as e:
+        logger.exception("DB connect failed")
+        return _json_response(500, {"error": "DB_CONNECTION_FAILED", "message": str(e)})
 
     # GET /v1/location
     if m == "GET" and p == "/v1/location":
-        page = int(qs.get("page", "1"))
-        page_size = int(qs.get("pageSize", "10"))
+        page = _safe_int(qs.get("page"), 1)
+        page_size = _safe_int(qs.get("pageSize"), 10)
         key = f"browse:locations:p={page}:s={page_size}"
-        return response(200, cached_json(key, ttl, lambda: get_locations(conn, page, page_size)))
+        data = _cached_json(key, ttl, lambda: _get_locations(conn, page, page_size))
+        return _json_response(200, data)
 
-    # GET /v1/venue?location=...
+    # GET /v1/venue?location=<location_id>
     if m == "GET" and p == "/v1/venue":
         location_id = qs.get("location")
         if not location_id:
-            return response(400, {"error": "MISSING_LOCATION"})
-        page = int(qs.get("page", "1"))
-        page_size = int(qs.get("pageSize", "10"))
+            return _json_response(400, {"error": "MISSING_LOCATION"})
+        page = _safe_int(qs.get("page"), 1)
+        page_size = _safe_int(qs.get("pageSize"), 10)
         key = f"browse:venues:loc={location_id}:p={page}:s={page_size}"
-        return response(200, cached_json(key, ttl, lambda: get_venues(conn, location_id, page, page_size)))
+        data = _cached_json(key, ttl, lambda: _get_venues(conn, location_id, page, page_size))
+        return _json_response(200, data)
 
-    # GET /v1/performers?location=...
+    # GET /v1/performers?location=<location_id>
     if m == "GET" and p == "/v1/performers":
         location_id = qs.get("location")
         if not location_id:
-            return response(400, {"error": "MISSING_LOCATION"})
-        page = int(qs.get("page", "1"))
-        page_size = int(qs.get("pageSize", "10"))
+            return _json_response(400, {"error": "MISSING_LOCATION"})
+        page = _safe_int(qs.get("page"), 1)
+        page_size = _safe_int(qs.get("pageSize"), 10)
         key = f"browse:performers:loc={location_id}:p={page}:s={page_size}"
-        return response(200, cached_json(key, ttl, lambda: get_performers(conn, location_id, page, page_size)))
+        data = _cached_json(key, ttl, lambda: _get_performers(conn, location_id, page, page_size))
+        return _json_response(200, data)
 
-    # GET /v1/events?location=...&performer=...&venue=...
+    # GET /v1/events?location=<location_id>&performer=<performer_id>&venue=<venue_id>
     if m == "GET" and p == "/v1/events":
         location_id = qs.get("location")
         if not location_id:
-            return response(400, {"error": "MISSING_LOCATION"})
+            return _json_response(400, {"error": "MISSING_LOCATION"})
         performer_id = qs.get("performer")
         venue_id = qs.get("venue")
-        page = int(qs.get("page", "1"))
-        page_size = int(qs.get("pageSize", "20"))
+        page = _safe_int(qs.get("page"), 1)
+        page_size = _safe_int(qs.get("pageSize"), 20)
 
         key = f"browse:events:loc={location_id}:perf={performer_id}:venue={venue_id}:p={page}:s={page_size}"
-        return response(
-            200,
-            cached_json(
-                key,
-                ttl,
-                lambda: list_events(conn, location_id, performer_id, venue_id, page, page_size),
-            ),
-        )
+        data = _cached_json(key, ttl, lambda: _list_events(conn, location_id, performer_id, venue_id, page, page_size))
+        return _json_response(200, data)
 
     # GET /v1/event/{eventId}
     if m == "GET" and p.startswith("/v1/event/"):
         event_id = p.split("/v1/event/", 1)[1]
+        if not event_id:
+            return _json_response(400, {"error": "MISSING_EVENT_ID"})
         key = f"browse:event:{event_id}"
-        data = cached_json(key, ttl, lambda: get_event_details(conn, event_id))
+        data = _cached_json(key, ttl, lambda: _event_details(conn, event_id))
         if not data:
-            return response(404, {"error": "EVENT_NOT_FOUND"})
-        return response(200, data)
+            return _json_response(404, {"error": "EVENT_NOT_FOUND"})
+        return _json_response(200, data)
 
-    return response(404, {"error": "NOT_FOUND", "path": p, "method": m})
+    return _json_response(404, {"error": "NOT_FOUND", "path": p, "method": m})
