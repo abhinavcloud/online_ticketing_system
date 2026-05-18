@@ -1,7 +1,7 @@
 # Creating a User with IAM Authentication
 resource "aws_elasticache_user" "elasticache_user" {
-  user_id       = "testUserId"
-  user_name     = "testUserId"
+  user_id       = "test-user-id"
+  user_name     = "test-user-id"
   access_string = "on ~* +@all"
   engine        = "valkey"
 
@@ -13,8 +13,9 @@ resource "aws_elasticache_user" "elasticache_user" {
 # Create an Elasticache User Group
 resource "aws_elasticache_user_group" "elasticache_user_group" {
   engine        = "valkey"
-  user_group_id = "userGroupId"
+  user_group_id = "user-group-id"
   user_ids      = [aws_elasticache_user.elasticache_user.user_id]
+  depends_on = [aws_elasticache_user.elasticache_user]
 }
 
 # Create an Elasticache Security Group

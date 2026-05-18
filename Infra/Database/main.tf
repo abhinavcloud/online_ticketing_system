@@ -31,11 +31,11 @@ resource "aws_vpc_security_group_ingress_rule" "aurora_sg_ingress_rule" {
 
 #Creating an Aurora Serverless DB Cluster
 resource "aws_rds_cluster" "online-ticketing-system" {
-  cluster_identifier = "online-ticketing-system"
+  cluster_identifier = "onlineticketingsystem"
   engine             = "aurora-postgresql"
   engine_mode        = "provisioned"
   engine_version     = "17.7"
-  database_name      = "online-ticketing-system"
+  database_name      = "onlineticketingsystem"
   master_username    = var.master_username
   master_password    = var.master_password
   storage_encrypted  = true
@@ -124,6 +124,8 @@ data "aws_iam_policy_document" "rds_proxy_assume_role" {
   }
 }
 
+
+
 # Create a RDS Proxy role with the Assume Role Policy identifying the principal who can assume this role.
 resource "aws_iam_role" "rds_proxy_role" {
   name               = "rds-proxy-role"
@@ -166,6 +168,52 @@ resource "aws_vpc_security_group_egress_rule" "rds_proxy_sg_egress_rule" {
   from_port   = 5432
   ip_protocol = "tcp"
   to_port     = 5432
+}
+
+
+# Create a aurora master username and passwords as a secret as secret manager to pass it to the RDS Proxy in next step
+resource "aws_secretsmanager_secret" "aurora_master_secret" {
+  name = "aurora-master-credentials"
+}
+
+resource "aws_secretsmanager_secret_version" "aurora_master_secret_version" {
+  secret_id = aws_secretsmanager_secret.aurora_master_secret.id
+
+  secret_string = jsonencode({
+    username = aws_rds_cluster.online-ticketing-system.master_username
+    password = aws_rds_cluster.online-ticketing-system.master_password
+  })
+}
+
+
+
+# Create an IAM Policy for RDS Proxy to acceess secret manager secret
+
+resource "aws_iam_policy" "rds_proxy_allow_secret_manager_connection" {
+  name        = "rds-proxy-allow-secret-manager-connection"
+  path        = "/"
+  description = "This is an Allow Policy for RDS Proxy to allow to connect to Secret Manager"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
+        ],
+        Resource = aws_secretsmanager_secret.aurora_master.arn
+      }
+    ]
+  })
+}
+
+
+# Attach the policy to the existing RDS Proxy Role
+resource "aws_iam_role_policy_attachment" "attach_rds_proxy_allow_secret_manager_access" {
+  role       = aws_iam_role.rds_proxy_role.name
+  policy_arn = aws_iam_policy.rds_proxy_allow_secret_manager_connection.arn
 }
 
 # Create a RDS Proxy with end to end IAM Authentication so that db credentials are not needed in Secrets Manager

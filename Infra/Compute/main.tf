@@ -64,8 +64,8 @@ resource "aws_iam_policy" "lambda_elasticache_policy" {
 
 
 # Create a Lambda Role 
-resource "aws_iam_role" "lambda_role" {
-  name               = "lambda_role"
+resource "aws_iam_role" "lambda_role_ticket_system" {
+  name               = "lambda-role_ticket-system"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -85,14 +85,14 @@ resource "aws_iam_role" "lambda_role" {
 
 # Create a lambda role policy attachement with accesing RDS proxy policy
 resource "aws_iam_role_policy_attachment" "lambda_attach_rds_proxy" {
-  role       = aws_iam_role.lambda_role.name
+  role       = aws_iam_role.lambda_role_ticket_system.name
   policy_arn = aws_iam_policy.lambda_rds_proxy_policy.arn
 
 }
 
 # Create a lambda role policy attachement with accesing Elasticache
 resource "aws_iam_role_policy_attachment" "lambda_attach_elasticache" {
-  role       = aws_iam_role.lambda_role.name
+  role       = aws_iam_role.lambda_role_ticket_system.name
   policy_arn = aws_iam_policy.lambda_elasticache_policy.arn
 }
 
@@ -100,7 +100,7 @@ resource "aws_iam_role_policy_attachment" "lambda_attach_elasticache" {
 
 # Create a lambda role policy attachement with Basic Execution Policy for accessing Cloudwatch
 resource "aws_iam_role_policy_attachment" "lambda_basic_execution_policy" {
-  role       = aws_iam_role.lambda_role.name
+  role       = aws_iam_role.lambda_role_ticket_system.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
