@@ -10,4 +10,4 @@ psql "host=onlineticketingsystem.cluster-chy0sq2si9a2.ap-south-1.rds.amazonaws.c
   -v event_name='Demo Event' \
   -v seat_count=200 \
   -v vip_pct=20 \
-  -f ticketing_bootstrap.sql
+  -f databasecreationScript.sql
