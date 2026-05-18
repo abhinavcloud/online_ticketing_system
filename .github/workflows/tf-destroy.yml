@@ -47,7 +47,7 @@ jobs:
                   terraform init -backend-config=backend.hcl
 
             - name: terraform-state-unlock
-              run: terraform state-unlock -force e13acc47-2a4b-301f-b787-582584ad9987
+              run: terraform force-unlock -force e13acc47-2a4b-301f-b787-582584ad9987
 
             - name: terraform-plan
               run: terraform plan -out=tfplan
