@@ -113,6 +113,13 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution_policy" {
 
 
 
+# Create a lambda tole policy attachment to access resources inside VPC
+resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
+  role       = aws_iam_role.lambda_role_ticket_system.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
+
 # Create an Ingress rule for Lambda Security Group
 #resource "aws_vpc_security_group_ingress_rule" "rds_proxy_sg_ingress_rule" {
 #  security_group_id = security_group_id
