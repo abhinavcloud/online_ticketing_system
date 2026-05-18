@@ -25,7 +25,7 @@ module "Database" {
     account_id = var.account_id
     master_username = var.master_username
     master_password = var.master_password
-    referenced_security_group_id = module.Compute.lambda_sg
+    referenced_security_group_id = aws_security_group.lambda_sg.id
 
 }
 
