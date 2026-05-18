@@ -43,6 +43,7 @@ resource "aws_rds_cluster" "online-ticketing-system" {
   enable_http_endpoint = false
   vpc_security_group_ids = [aws_security_group.aurora_sg.id]
   iam_database_authentication_enabled = true
+  skip_final_snapshot = true
   serverlessv2_scaling_configuration {
     max_capacity             = 1.0
     min_capacity             = 0.0
