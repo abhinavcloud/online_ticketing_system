@@ -231,6 +231,7 @@ resource "aws_db_proxy" "rds_proxy" {
   auth {
     description = "End to End IAM Authentication"
     iam_auth    = "REQUIRED"
+    secret_arn  = aws_secretsmanager_secret.aurora_master_secret.arn
   }
 
   tags = {
