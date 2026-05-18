@@ -173,8 +173,8 @@ resource "aws_lambda_function" "browse_service" {
   description   = "Browse Service: locations/venues/performers/events/event-details"
   runtime       = "python3.12"
   handler       = "app.handler"
-  timeout       = 10
-  memory_size   = 256
+  timeout       = 30
+  memory_size   = 512
 
   filename         = data.archive_file.browse_lambda_zip.output_path
   source_code_hash = data.archive_file.browse_lambda_zip.output_base64sha256
