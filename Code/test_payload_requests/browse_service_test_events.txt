@@ -1,0 +1,283 @@
+# Browse Service – Lambda Console Test Events (All Endpoints)
+
+These events are ready to paste into **AWS Lambda Console → Test → Configure test event**.
+
+They use **HTTP API (v2) style** payloads (`version: 2.0`, `rawPath`, `requestContext.http.method`).
+
+## Replace these placeholders
+- LOCATION_ID: your UUID (example: `2cef468d-eee9-4a96-9d5a-7fda95910235`)
+- VENUE_ID: your UUID (example: `533d8812-6dd9-48f4-80b8-3d82f06117fc`)
+- PERFORMER_ID: your UUID
+- EVENT_ID: your UUID
+
+---
+
+## 1) GET /v1/location
+
+```json
+{
+  "version": "2.0",
+  "rawPath": "/v1/location",
+  "queryStringParameters": {
+    "page": "1",
+    "pageSize": "10"
+  },
+  "requestContext": {
+    "http": {
+      "method": "GET",
+      "path": "/v1/location"
+    }
+  }
+}
+```
+
+---
+
+## 2) GET /v1/venue?location=<LOCATION_ID>
+
+```json
+{
+  "version": "2.0",
+  "rawPath": "/v1/venue",
+  "queryStringParameters": {
+    "location": "LOCATION_ID",
+    "page": "1",
+    "pageSize": "10"
+  },
+  "requestContext": {
+    "http": {
+      "method": "GET",
+      "path": "/v1/venue"
+    }
+  }
+}
+```
+
+---
+
+## 3) GET /v1/performers?location=<LOCATION_ID>
+
+```json
+{
+  "version": "2.0",
+  "rawPath": "/v1/performers",
+  "queryStringParameters": {
+    "location": "LOCATION_ID",
+    "page": "1",
+    "pageSize": "10"
+  },
+  "requestContext": {
+    "http": {
+      "method": "GET",
+      "path": "/v1/performers"
+    }
+  }
+}
+```
+
+---
+
+## 4) GET /v1/events?location=<LOCATION_ID>
+
+```json
+{
+  "version": "2.0",
+  "rawPath": "/v1/events",
+  "queryStringParameters": {
+    "location": "LOCATION_ID",
+    "page": "1",
+    "pageSize": "20"
+  },
+  "requestContext": {
+    "http": {
+      "method": "GET",
+      "path": "/v1/events"
+    }
+  }
+}
+```
+
+---
+
+## 5) GET /v1/events?location=<LOCATION_ID>&venue=<VENUE_ID>
+
+```json
+{
+  "version": "2.0",
+  "rawPath": "/v1/events",
+  "queryStringParameters": {
+    "location": "LOCATION_ID",
+    "venue": "VENUE_ID",
+    "page": "1",
+    "pageSize": "20"
+  },
+  "requestContext": {
+    "http": {
+      "method": "GET",
+      "path": "/v1/events"
+    }
+  }
+}
+```
+
+---
+
+## 6) GET /v1/events?location=<LOCATION_ID>&performer=<PERFORMER_ID>
+
+```json
+{
+  "version": "2.0",
+  "rawPath": "/v1/events",
+  "queryStringParameters": {
+    "location": "LOCATION_ID",
+    "performer": "PERFORMER_ID",
+    "page": "1",
+    "pageSize": "20"
+  },
+  "requestContext": {
+    "http": {
+      "method": "GET",
+      "path": "/v1/events"
+    }
+  }
+}
+```
+
+---
+
+## 7) GET /v1/events?location=<LOCATION_ID>&performer=<PERFORMER_ID>&venue=<VENUE_ID>
+
+```json
+{
+  "version": "2.0",
+  "rawPath": "/v1/events",
+  "queryStringParameters": {
+    "location": "LOCATION_ID",
+    "performer": "PERFORMER_ID",
+    "venue": "VENUE_ID",
+    "page": "1",
+    "pageSize": "20"
+  },
+  "requestContext": {
+    "http": {
+      "method": "GET",
+      "path": "/v1/events"
+    }
+  }
+}
+```
+
+---
+
+## 8) GET /v1/event/<EVENT_ID>
+
+```json
+{
+  "version": "2.0",
+  "rawPath": "/v1/event/EVENT_ID",
+  "requestContext": {
+    "http": {
+      "method": "GET",
+      "path": "/v1/event/EVENT_ID"
+    }
+  }
+}
+```
+
+---
+
+## 9) GET /v1/event/<EVENT_ID> (with explicit empty queryStringParameters)
+
+(Some consoles auto-add empty queryStringParameters; this version is safe.)
+
+```json
+{
+  "version": "2.0",
+  "rawPath": "/v1/event/EVENT_ID",
+  "queryStringParameters": null,
+  "requestContext": {
+    "http": {
+      "method": "GET",
+      "path": "/v1/event/EVENT_ID"
+    }
+  }
+}
+```
+
+---
+
+# Optional: REST API (v1) equivalents
+
+If your API Gateway is REST API, use these shapes instead.
+
+## R1) GET /v1/location
+```json
+{
+  "resource": "/v1/location",
+  "path": "/v1/location",
+  "httpMethod": "GET",
+  "queryStringParameters": {
+    "page": "1",
+    "pageSize": "10"
+  },
+  "requestContext": {}
+}
+```
+
+## R2) GET /v1/venue
+```json
+{
+  "resource": "/v1/venue",
+  "path": "/v1/venue",
+  "httpMethod": "GET",
+  "queryStringParameters": {
+    "location": "LOCATION_ID",
+    "page": "1",
+    "pageSize": "10"
+  },
+  "requestContext": {}
+}
+```
+
+## R3) GET /v1/performers
+```json
+{
+  "resource": "/v1/performers",
+  "path": "/v1/performers",
+  "httpMethod": "GET",
+  "queryStringParameters": {
+    "location": "LOCATION_ID",
+    "page": "1",
+    "pageSize": "10"
+  },
+  "requestContext": {}
+}
+```
+
+## R4) GET /v1/events
+```json
+{
+  "resource": "/v1/events",
+  "path": "/v1/events",
+  "httpMethod": "GET",
+  "queryStringParameters": {
+    "location": "LOCATION_ID",
+    "page": "1",
+    "pageSize": "20"
+  },
+  "requestContext": {}
+}
+```
+
+## R5) GET /v1/event/{eventId}
+```json
+{
+  "resource": "/v1/event/{eventId}",
+  "path": "/v1/event/EVENT_ID",
+  "httpMethod": "GET",
+  "pathParameters": {
+    "eventId": "EVENT_ID"
+  },
+  "requestContext": {}
+}
+```
