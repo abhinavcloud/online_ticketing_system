@@ -62,4 +62,4 @@ jobs:
                 if-no-files-found: error
 
             - name: terraform-destroy
-              run: terraform destory -auto-approve
+              run: terraform destroy -auto-approve
