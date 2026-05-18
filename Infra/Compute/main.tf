@@ -172,7 +172,7 @@ resource "aws_lambda_function" "browse_service" {
   filename         = data.archive_file.browse_lambda_zip.output_path
   source_code_hash = data.archive_file.browse_lambda_zip.output_base64sha256
 
-  role = aws_iam_role.lambda_role.arn
+  role = aws_iam_role.lambda_role_ticket_system.arn
 
   layers = [
     aws_lambda_layer_version.browse_deps.arn
