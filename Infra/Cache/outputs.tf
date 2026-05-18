@@ -71,13 +71,7 @@ output "elasticache_user_name" {
   value = aws_elasticache_user.elasticache_user.user_name
 }
 
-output "elasticache_user_endpoint" {
-  value = aws_elasticache_user.elasticache_user.endpoint
-}
 
-output "elasticache_user_port" {
-  value = aws_elasticache_user.elasticache_user.endpoint[0].port
-}
 
 output "elasticache_security_group" {
     value = aws_security_group.elasticache_sg.id
