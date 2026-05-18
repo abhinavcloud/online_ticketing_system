@@ -38,7 +38,7 @@ resource "aws_security_group" "lambda_sg" {
   vpc_id      = module.Network.vpc_id
 
   tags = {
-    Application = "Elasticache"
+    Application = "Lambda"
     Type = "Security_Group"
   }
 }
