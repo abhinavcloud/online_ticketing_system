@@ -1,8 +1,8 @@
 import os
 import json
 import time
-from typing import Any
-import Optional, Listimport, logging
+from typing import Any, Optional, List, Dict
+import logging
 
 import boto3
 import psycopg2
@@ -292,7 +292,7 @@ def list_events(conn, location_id: str, performer_id: Optional[str], venue_id: O
     off = (page - 1) * page_size
 
     filters = ["v.location_id = %s"]
-    params: list[Any] = [location_id]
+    params: List[Any] = [location_id]
 
     if performer_id:
         filters.append("ep.performer_id = %s")
