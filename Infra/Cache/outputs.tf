@@ -9,7 +9,7 @@ output "browse_cache_endpoint" {
 
 
 output "browse_cache_port" {
-  value = aws_elasticache_serverless_cache.browse_cache.port
+  value = aws_elasticache_serverless_cache.browse_cache.endpoint[0].port
 }
 
 
@@ -30,7 +30,7 @@ output "active_users_cache_endpoint" {
 }
 
 output "active_users_cache_port" {
-  value = aws_elasticache_serverless_cache.active_users.port
+  value = aws_elasticache_serverless_cache.active_users.endpoint[0].port
 }
 
 output "active_users_cache_name" {
@@ -50,7 +50,7 @@ output "seat_lock_cache_endpoint" {
 }
 
 output "seat_lock_cache_port" {
-  value = aws_elasticache_serverless_cache.seat_lock.port
+  value = aws_elasticache_serverless_cache.seat_lock.endpoint[0].port
 }
 
 output "seat_lock_cache_name" {
@@ -71,7 +71,13 @@ output "elasticache_user_name" {
   value = aws_elasticache_user.elasticache_user.user_name
 }
 
+output "elasticache_user_endpoint" {
+  value = aws_elasticache_user.elasticache_user.endpoint
+}
 
+output "elasticache_user_port" {
+  value = aws_elasticache_user.elasticache_user.endpoint[0].port
+}
 
 output "elasticache_security_group" {
     value = aws_security_group.elasticache_sg.id
