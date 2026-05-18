@@ -31,6 +31,7 @@ module "Database" {
 
 
 # Create a Security Group for Lambda 
+# Defining this out of Compute Module to avoid circular dependency between lambda, aurora and elasticache security groups
 resource "aws_security_group" "lambda_sg" {
   name        = "lambda-sg"
   description = "Allow TLS inbound traffic from lambda"
@@ -55,7 +56,6 @@ module "Compute" {
     security_group_id = aws_security_group.lambda_sg.id
     db_proxy_security_group = module.Database.db_proxy_security_group
     elasticache_security_group = module.Cache.elasticache_security_group
-
 }
 
 module "Cache" {
