@@ -379,7 +379,7 @@ def _list_events(
                 SELECT ep.event_id, p.id AS performer_id, p.name AS performer_name
                 FROM public.event_performers ep
                 JOIN public.performers p ON p.id = ep.performer_id
-                WHERE ep.event_id = ANY(%s);
+                WHERE ep.event_id = ANY(%s::uuid[]);
                 """,
                 (event_ids,),
             )
