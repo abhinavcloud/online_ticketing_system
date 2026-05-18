@@ -88,7 +88,7 @@ def _safe_int(s: Optional[str], default: int) -> int:
 
 def _db_auth_token() -> str:
     """Generate IAM DB auth token used as the password."""
-    region = os.environ["AWS_REGION"]
+    region = os.environ["APP_REGION"]
     host = os.environ["DB_HOST"]
     port = int(os.environ.get("DB_PORT", "5432"))
     user = os.environ["DB_USER"]
@@ -169,7 +169,7 @@ def _browse_cache_client():
     if _VALKEY is not None and now < _VALKEY_REFRESH_AT:
         return _VALKEY
 
-    token = _elasticache_iam_token(user_id=user_id, cache_name=cache_name, region=os.environ["AWS_REGION"])
+    token = _elasticache_iam_token(user_id=user_id, cache_name=cache_name, region=os.environ["APP_REGION"])
 
     client = redis.Redis(
         host=endpoint,

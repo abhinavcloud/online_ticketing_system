@@ -185,7 +185,7 @@ resource "aws_lambda_function" "browse_service" {
 
   environment {
     variables = {
-      AWS_REGION = var.region
+      APP_REGION = var.region
 
       # DB (RDS Proxy IAM)
       DB_HOST = var.db_proxy_endpoint
