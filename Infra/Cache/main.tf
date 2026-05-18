@@ -1,7 +1,7 @@
 # Creating a User with IAM Authentication
 resource "aws_elasticache_user" "elasticache_user" {
   user_id       = "testUserId"
-  user_name     = "testUserName"
+  user_name     = "testUserId"
   access_string = "on ~* +@all"
   engine        = "valkey"
 
