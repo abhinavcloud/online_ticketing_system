@@ -46,9 +46,6 @@ jobs:
               run: | 
                   terraform init -backend-config=backend.hcl
 
-            - name: terraform-state-unlock
-              run: terraform force-unlock -force e13acc47-2a4b-301f-b787-582584ad9987
-
             - name: terraform-plan
               run: terraform plan -out=tfplan
 
@@ -65,9 +62,6 @@ jobs:
                 if-no-files-found: error
 
 
-
-            - name: terraform-conditional-apply
-              run: terraform apply -target=module.Database.aws_rds_cluster.online-ticketing-system -auto-approve
 
             - name: terraform-destroy
               run: terraform destroy -auto-approve
