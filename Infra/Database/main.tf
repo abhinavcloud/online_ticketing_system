@@ -203,7 +203,7 @@ resource "aws_iam_policy" "rds_proxy_allow_secret_manager_connection" {
           "secretsmanager:GetSecretValue",
           "secretsmanager:DescribeSecret"
         ],
-        Resource = aws_secretsmanager_secret.aurora_master.arn
+        Resource = aws_secretsmanager_secret.aurora_master_secret.arn
       }
     ]
   })
