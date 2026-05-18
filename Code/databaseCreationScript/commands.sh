@@ -1,9 +1,6 @@
-
 #!/bin/bash
 set -euxo pipefail
 dnf -y install postgresql15 || dnf -y install postgresq
-
-
 
 psql "host=onlineticketingsystem.cluster-chy0sq2si9a2.ap-south-1.rds.amazonaws.com port=5432 dbname=onlineticketingsystem user=abhinavkumar1987 sslmode=require" \
   -v seed=1 \
