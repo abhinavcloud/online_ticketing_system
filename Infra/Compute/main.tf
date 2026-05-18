@@ -66,13 +66,7 @@ resource "aws_iam_policy" "lambda_elasticache_policy" {
 # Create a Lambda Role 
 resource "aws_iam_role" "lambda_role" {
   name               = "lambda_role"
-  assume_role_policy = aws_iam_policy.lambda_assume_role_policy.arn
-}
-
-# Create a lambda role policy attachement with accesing RDS proxy policy
-resource "aws_iam_role_policy_attachment" "lambda_attach_rds_proxy" {
-  role       = aws_iam_role.lambda_role.name
-  policy_arn = jsonencode({
+  assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
        {
@@ -87,6 +81,13 @@ resource "aws_iam_role_policy_attachment" "lambda_attach_rds_proxy" {
   }
     ]
   })
+}
+
+# Create a lambda role policy attachement with accesing RDS proxy policy
+resource "aws_iam_role_policy_attachment" "lambda_attach_rds_proxy" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = aws_iam_policy.lambda_rds_proxy_policy.arn
+
 }
 
 # Create a lambda role policy attachement with accesing Elasticache
@@ -112,6 +113,8 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution_policy" {
 
 # Create and Egress rule for Lambda Security Group to RDS Proxy
 
+
+# Create a Lambda with IAM Role and Security Group (Table Creation)
 
 # Create a Lambda with IAM Role and Security Group (Browse Service)
 
