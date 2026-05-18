@@ -107,11 +107,31 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution_policy" {
 
 
 # Create an Ingress rule for Lambda Security Group
+#resource "aws_vpc_security_group_ingress_rule" "rds_proxy_sg_ingress_rule" {
+#  security_group_id = security_group_id
+#  referenced_security_group_id = var.referenced_security_group_id
+#  from_port         = 5432
+#  ip_protocol       = "tcp"
+#  to_port           = 5432
+#}
 
-# Create an Egress rule for Lmabda Security Group to Elasticache
+# Creating an Egress rule from Lambda security group to RDS Proxy
+resource "aws_vpc_security_group_egress_rule" "lambda_sg_egress_rds_proxy_rule" {
+  security_group_id = var.security_group_id
+  referenced_security_group_id  = var.db_proxy_security_group
+  from_port   = 5432
+  ip_protocol = "tcp"
+  to_port     = 5432
+}
 
-
-# Create and Egress rule for Lambda Security Group to RDS Proxy
+# Create and Egress rule for Lambda Security Group to Elasticache
+resource "aws_vpc_security_group_egress_rule" "elasticache_sg_egress_rule" {
+  security_group_id = var.security_group_id
+  referenced_security_group_id  = var.elasticache_security_group
+  from_port   = 6379
+  ip_protocol = "tcp"
+  to_port     = 6379
+}
 
 
 # Create a Lambda with IAM Role and Security Group (Table Creation)

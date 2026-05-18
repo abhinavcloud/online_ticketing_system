@@ -52,6 +52,10 @@ module "Compute" {
     active_user_lock_cache= module.Cache.serverless_active_user_lock
     seat_lock_cache = module.Cache.serverless_seat_lock
     user = module.Cache.user
+    security_group_id = aws_security_group.lambda_sg.id
+    db_proxy_security_group = module.Database.db_proxy_security_group
+    elasticache_security_group = module.Cache.elasticache_security_group
+
 }
 
 module "Cache" {

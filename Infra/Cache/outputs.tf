@@ -13,3 +13,7 @@ output "serverless_seat_lock" {
 output "user" {
     value = aws_elasticache_user.elasticache_user.arn
 }
+
+output "elasticache_security_group" {
+    value = aws_security_group.elasticache_sg.id
+}

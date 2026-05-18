@@ -41,3 +41,18 @@ variable "user" {
     type = string
     description = "Cache User ARN"
 }
+
+variable "security_group_id" {
+    type = string 
+    description = "Lambda security group id"
+}
+
+variable "db_proxy_security_group" {
+    type = string
+    description = "RDS Proxy Security Group"
+}
+
+variable "elasticache_security_group" {
+    type = string
+    description = " Elasticache Security Group"
+}
