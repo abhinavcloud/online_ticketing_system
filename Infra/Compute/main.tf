@@ -13,8 +13,9 @@ resource "aws_iam_policy" "lambda_rds_proxy_policy" {
         "rds-db:connect"
       ],
       "Resource": [
-        "arn:aws:rds-db:${var.region}:${var.account_id}:dbuser:${var.db_proxy_id}/*"
+        "arn:aws:rds-db:${var.region}:${var.account_id}:dbuser:${var.db_proxy_id}/${var.db_user}"
       ]
+
     },
     {
       "Sid": "AllowDescribeRDSProxy",
@@ -25,7 +26,15 @@ resource "aws_iam_policy" "lambda_rds_proxy_policy" {
         "rds:DescribeDBProxyTargetGroups"
       ],
       "Resource": "*"
-    }
+    },
+    
+    {
+        Sid    = "AllowGetDbToken",
+        Effect = "Allow",
+        Action = ["rds:GenerateDbAuthToken"],
+        Resource = ["*"]
+      }
+
   ]
   })
 }
@@ -132,10 +141,72 @@ resource "aws_vpc_security_group_egress_rule" "elasticache_sg_egress_rule" {
 }
 
 
-# Create a Lambda with IAM Role and Security Group (Table Creation)
-
 # Create a Lambda with IAM Role and Security Group (Browse Service)
+data "archive_file" "browse_layer_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/../../Code/browse_service_layer/python"
+  output_path = "${path.module}/artifacts/browse_service_layer.zip"
+}
 
+resource "aws_lambda_layer_version" "browse_deps" {
+  layer_name          = "browse-service-deps"
+  filename            = data.archive_file.browse_layer_zip.output_path
+  source_code_hash    = data.archive_file.browse_layer_zip.output_base64sha256
+  compatible_runtimes = ["python3.12"]
+}
+
+data "archive_file" "browse_lambda_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/../../Code/browse_service"
+  output_path = "${path.module}/artifacts/browse_service.zip"
+}
+
+resource "aws_lambda_function" "browse_service" {
+  function_name = "browse-service"
+  description   = "Browse Service: locations/venues/performers/events/event-details"
+  runtime       = "python3.12"
+  handler       = "app.handler"
+  timeout       = 10
+  memory_size   = 256
+
+  filename         = data.archive_file.browse_lambda_zip.output_path
+  source_code_hash = data.archive_file.browse_lambda_zip.output_base64sha256
+
+  role = aws_iam_role.lambda_role.arn
+
+  layers = [
+    aws_lambda_layer_version.browse_deps.arn
+  ]
+
+  vpc_config {
+    subnet_ids         = var.subnet_group
+    security_group_ids = [var.security_group_id]
+  }
+
+  environment {
+    variables = {
+      AWS_REGION = var.region
+
+      # DB (RDS Proxy IAM)
+      DB_HOST = var.db_proxy_endpoint
+      DB_PORT = tostring(var.db_port)
+      DB_NAME = var.db_name
+      DB_USER = var.db_user
+
+      # Browse cache (Valkey serverless IAM)
+      BROWSE_CACHE_ENDPOINT     = var.browse_cache_endpoint
+      BROWSE_CACHE_PORT         = tostring(var.browse_cache_port)
+      BROWSE_CACHE_NAME         = var.browse_cache_name
+      ELASTICACHE_USER_ID       = var.elasticache_user_id
+      BROWSE_CACHE_TTL_SECONDS  = tostring(var.browse_cache_ttl_seconds)
+    }
+  }
+
+  tags = {
+    Service = "ticketing"
+    Name    = "browse-service"
+  }
+}
 
 # Create a Lambda with IAM Role and Security Group (Queue Service)
 

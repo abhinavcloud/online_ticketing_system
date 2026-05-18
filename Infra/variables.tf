@@ -38,3 +38,10 @@ variable "master_password" {
     description = "Aurora DB Master Password"
     type = string
 }
+
+
+variable "app_db_user" {
+  type        = string
+  description = "IAM-enabled Postgres user for application lambdas"
+  default     = "app_user"
+}

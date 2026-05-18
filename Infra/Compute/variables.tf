@@ -56,3 +56,68 @@ variable "elasticache_security_group" {
     type = string
     description = " Elasticache Security Group"
 }
+
+variable "subnet_group" {
+    description = "list of subnet groups"
+    type = list(string)
+}
+
+
+variable "db_proxy_endpoint" {
+  type        = string
+  description = "RDS Proxy endpoint hostname"
+}
+
+
+variable "db_port" {
+  type        = number
+  default     = 5432
+}
+
+
+
+variable "db_name" {
+  type        = string
+}
+
+
+variable "db_user" {
+  type        = string
+  description = "IAM-enabled DB user Lambda will connect as (e.g., app_user)"
+}
+
+
+
+variable "browse_cache_endpoint" {
+  type        = string
+  description = "ElastiCache serverless endpoint hostname for browse cache"
+}
+
+
+
+variable "browse_cache_port" {
+  type        = number
+  default     = 6379
+}
+
+
+
+variable "browse_cache_name" {
+  type        = string
+  description = "Serverless cache name (e.g., browse-cache). Needed for IAM token signing"
+}
+
+
+
+variable "elasticache_user_id" {
+  type        = string
+  description = "ElastiCache IAM-enabled user id (must match username)"
+}
+
+
+
+variable "browse_cache_ttl_seconds" {
+  type        = number
+  default     = 30
+}
+

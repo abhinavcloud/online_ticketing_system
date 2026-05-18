@@ -56,6 +56,19 @@ module "Compute" {
     security_group_id = aws_security_group.lambda_sg.id
     db_proxy_security_group = module.Database.db_proxy_security_group
     elasticache_security_group = module.Cache.elasticache_security_group
+    subnet_group = [module.Network.subnet_01, module.Network.subnet_02, module.Network.subnet_03]
+    db_proxy_endpoint = module.Database.db_proxy_endpoint
+    db_port           = module.Database.db_port
+    db_name           = module.Database.db_name
+    db_user           = var.app_db_user   # define in Infra/variables.tf
+    browse_cache_endpoint = module.Cache.browse_cache_endpoint
+    browse_cache_port     = module.Cache.browse_cache_port
+    browse_cache_name     = "browse-cache" # must match actual serverless cache name
+    elasticache_user_id   = module.Cache.elasticache_user_id
+    browse_cache_ttl_seconds = 30
+
+
+
 }
 
 module "Cache" {
