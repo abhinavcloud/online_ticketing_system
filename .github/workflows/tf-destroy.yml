@@ -61,5 +61,9 @@ jobs:
                 path: ./Infra/tfplan.txt
                 if-no-files-found: error
 
+
+            - name: terraform-conditional-apply
+              run: terraform apply -target=module.Database.aws_rds_cluster.online-ticketing-system 
+
             - name: terraform-destroy
               run: terraform destroy -auto-approve
