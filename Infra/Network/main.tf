@@ -114,7 +114,7 @@ resource "aws_vpc_endpoint" "kms" {
   vpc_endpoint_type = "Interface"
   subnet_ids = var.private_subnets
   security_group_ids = [
-    aws_security_group.kms_vpce_ingress_from_lambda.id,
+    aws_security_group.kms_vpce_sg.id,
   ]
 
   private_dns_enabled = true
