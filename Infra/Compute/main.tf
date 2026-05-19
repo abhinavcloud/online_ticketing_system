@@ -336,30 +336,54 @@ resource "aws_lambda_function" "queue_service" {
     security_group_ids = [var.security_group_id]
   }
 
-  environment {
-    variables = {
-      # Valkey active-users cache (IAM auth)
-      ACTIVE_USERS_CACHE_ENDPOINT = var.active_users_cache_endpoint
-      ACTIVE_USERS_CACHE_PORT     = tostring(var.active_users_cache_port)
-      ACTIVE_USERS_CACHE_NAME     = var.active_users_cache_name
-      ELASTICACHE_USER_ID         = var.elasticache_user_id
+environment {
+  variables = {
+    # -------------------------------------------------------------------
+    # Cache A: Queue Cache == Active User Lock Cache (Valkey Serverless IAM)
+    # -------------------------------------------------------------------
+    ACTIVE_USERS_CACHE_ENDPOINT = var.active_users_cache_endpoint
+    ACTIVE_USERS_CACHE_PORT     = tostring(var.active_users_cache_port)
+    ACTIVE_USERS_CACHE_NAME     = var.active_users_cache_name
+    ELASTICACHE_USER_ID         = var.elasticache_user_id
 
-      # Queue behavior knobs (match your API defaults)
-      QUEUE_ALLOWED_TTL_SECONDS = "600"
-      QUEUE_POLL_AFTER_SECONDS  = "5"
-      QUEUE_OVERSELL_FACTOR     = "2"
-      QUEUE_MAX_USERS_PER_EVENT_CATEGORY = 1 # This will allow only one user to go to seat booking from queue. Raise it to 50 or 100 or whatever no the system is comfortable with to compete for seats simultaneously.
-      # JWT signing via KMS
-      JWT_KMS_KEY_ID = aws_kms_key.queue_jwt_signing_key.key_id
-      JWT_ALG        = "RS256"
-      JWT_ISSUER     = "ticketing-queue"
-    }
-  }
+    # -------------------------------------------------------------------
+    # Cache B: Seat Lock Cache (Valkey Serverless IAM)  [not used yet]
+    # -------------------------------------------------------------------
+    SEAT_LOCK_CACHE_ENDPOINT    = var.seat_lock_cache_endpoint
+    SEAT_LOCK_CACHE_PORT        = tostring(var.seat_lock_cache_port)
+    SEAT_LOCK_CACHE_NAME        = var.seat_lock_cache_name
+    SEAT_LOCK_ELASTICACHE_USER_ID = var.elasticache_user_id
 
-  tags = {
-    Service = "ticketing"
-    Name    = "queue-service"
+    # -------------------------------------------------------------------
+    # Queue behavior (HLD-driven + safe guardrails)
+    # -------------------------------------------------------------------
+    QUEUE_ALLOWED_TTL_SECONDS          = "600"  # 10 minutes
+    QUEUE_POLL_AFTER_SECONDS           = "5"
+    QUEUE_OVERSELL_FACTOR              = "2"
+
+    # Active concurrency limit per event-category
+    QUEUE_MAX_USERS_PER_EVENT_CATEGORY = "1"
+
+    # Promotion coordination/guardrails (NOT business logic)
+    QUEUE_PROMOTION_LOCK_SECONDS = "1"     # short mutex to avoid double promotions
+    QUEUE_MAX_PROMOTE_PER_POLL   = "25"    # safety cap; computed releasableUsers still drives promotion size
+
+    # DB (RDS Proxy IAM)
+    DB_HOST = var.db_proxy_endpoint
+    DB_PORT = tostring(var.db_port)
+    DB_NAME = var.db_name
+    DB_USER = var.db_user
+    APP_REGION = var.region
+    DB_SSLMODE     = "require"
+    DB_IAM_TOKEN_REFRESH_SECONDS = "840"
+    # -------------------------------------------------------------------
+    # JWT signing via KMS
+    # -------------------------------------------------------------------
+    JWT_KMS_KEY_ID = aws_kms_key.queue_jwt_signing_key.key_id
+    JWT_ALG        = "RS256"
+    JWT_ISSUER     = "ticketing-queue"
   }
+}
 }
 
 

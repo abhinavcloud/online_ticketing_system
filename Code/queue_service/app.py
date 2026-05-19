@@ -4,7 +4,7 @@ import time
 import uuid
 import base64
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional
 
 import boto3
 
@@ -13,21 +13,41 @@ try:
 except Exception:  # pragma: no cover
     redis = None
 
+try:
+    import psycopg2  # psycopg2-binary
+except Exception:  # pragma: no cover
+    psycopg2 = None
+
 from botocore.session import Session
 from botocore.auth import SigV4QueryAuth
 from botocore.awsrequest import AWSRequest
+from botocore.config import Config
 
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-# Warm container cache for redis client + IAM token
-_VALKEY = None
-_VALKEY_REFRESH_AT = 0.0
+# Fail fast to avoid long hangs
+_BOTO_CFG = Config(connect_timeout=2, read_timeout=3, retries={"max_attempts": 1})
+
+# ----------------------------
+# Warm caches
+# ----------------------------
+# Cache A == Queue Cache (Valkey Serverless IAM)
+_QUEUE_REDIS = None
+_QUEUE_REDIS_REFRESH_AT = 0.0
+
+# DB connection (Aurora via RDS Proxy)
+_DB_CONN = None
+_DB_CONN_REFRESH_AT = 0.0
+
+# RDS IAM token cache (used as password when connecting to RDS Proxy)
+_RDS_IAM_TOKEN = None
+_RDS_IAM_TOKEN_REFRESH_AT = 0.0
 
 
 # ----------------------------
-# Responses / parsing
+# Small utilities
 # ----------------------------
 def _resp(status_code: int, body: Any) -> Dict[str, Any]:
     return {
@@ -50,28 +70,36 @@ def _parse_json_body(event: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _get_user_sub_from_rest_api(event: Dict[str, Any]) -> Optional[str]:
-    """
-    REST API + Cognito Authorizer (proxy integration) exposes claims at:
-      event.requestContext.author
-    [1](https://stackoverflow.com/questions/71199379/how-to-pass-cognito-user-pool-information-to-lambda-through-api-gateway)[2](https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html)
-    """
+    """REST API + Cognito Authorizer (proxy integration): event.requestContext.authorizer.claims"""
     rc = event.get("requestContext") or {}
     auth = rc.get("authorizer") or {}
     claims = auth.get("claims") or {}
     return claims.get("sub")
 
 
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(os.environ.get(name, str(default)))
+    except Exception:
+        return default
+
+
+def _env_str(primary: str, fallback: Optional[str] = None, required: bool = False) -> Optional[str]:
+    v = os.environ.get(primary)
+    if v is None and fallback:
+        v = os.environ.get(fallback)
+    if required and not v:
+        raise KeyError(
+            f"Missing required env var: {primary}" + (f" (or {fallback})" if fallback else "")
+        )
+    return v
+
+
 # ----------------------------
-# ElastiCache Serverless IAM auth (Valkey/Redis)
+# ElastiCache Serverless IAM auth (Valkey)
 # ----------------------------
 def _elasticache_iam_token(user_id: str, cache_name: str, region: str) -> str:
-    """
-    IAM auth token is a SigV4 presigned URL, used as password.
-    - Requires TLS
-    - Cache name should be lowercase
-    - IAM-enabled ElastiCache users require username == user_id
-    [3](https://awstip.com/creating-aws-lambda-layers-for-python-runtime-a-complete-guide-93c307a71dd3)
-    """
+    """Build a SigV4 presigned URL used as password for ElastiCache Serverless IAM auth (TLS required)."""
     cache_name = cache_name.lower()
     url = f"http://{cache_name}/"
     params = {"Action": "connect", "User": user_id, "ResourceType": "ServerlessCache"}
@@ -91,21 +119,22 @@ def _elasticache_iam_token(user_id: str, cache_name: str, region: str) -> str:
     return aws_req.url.replace("http://", "")
 
 
-def _active_users_cache_client():
-    global _VALKEY, _VALKEY_REFRESH_AT
+def _queue_cache():
+    """Cache A == Queue cache (Valkey). Supports both QUEUE_CACHE_* and ACTIVE_USERS_CACHE_* env names."""
+    global _QUEUE_REDIS, _QUEUE_REDIS_REFRESH_AT
 
     if redis is None:
-        raise RuntimeError("redis library not available. Add redis to your layer/package.")
+        raise RuntimeError("redis library not available. Add redis to your Lambda layer/package.")
 
-    endpoint = os.environ["ACTIVE_USERS_CACHE_ENDPOINT"]
-    port = int(os.environ.get("ACTIVE_USERS_CACHE_PORT", "6379"))
-    cache_name = os.environ["ACTIVE_USERS_CACHE_NAME"]  # e.g., "active-users"
-    user_id = os.environ["ELASTICACHE_USER_ID"]
+    endpoint = _env_str("QUEUE_CACHE_ENDPOINT", "ACTIVE_USERS_CACHE_ENDPOINT", required=True)
+    port = int(_env_str("QUEUE_CACHE_PORT", "ACTIVE_USERS_CACHE_PORT") or "6379")
+    cache_name = _env_str("QUEUE_CACHE_NAME", "ACTIVE_USERS_CACHE_NAME", required=True)
+    user_id = _env_str("QUEUE_ELASTICACHE_USER_ID", "ELASTICACHE_USER_ID", required=True)
     region = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION")
 
     now = time.time()
-    if _VALKEY is not None and now < _VALKEY_REFRESH_AT:
-        return _VALKEY
+    if _QUEUE_REDIS is not None and now < _QUEUE_REDIS_REFRESH_AT:
+        return _QUEUE_REDIS
 
     token = _elasticache_iam_token(user_id=user_id, cache_name=cache_name, region=region)
 
@@ -114,7 +143,7 @@ def _active_users_cache_client():
         port=port,
         username=user_id,
         password=token,
-        ssl=True,            # IAM auth requires TLS [3](https://awstip.com/creating-aws-lambda-layers-for-python-runtime-a-complete-guide-93c307a71dd3)
+        ssl=True,
         ssl_cert_reqs=None,
         decode_responses=True,
         socket_connect_timeout=2,
@@ -122,9 +151,96 @@ def _active_users_cache_client():
     )
     client.ping()
 
-    _VALKEY = client
-    _VALKEY_REFRESH_AT = now + (14 * 60)
+    _QUEUE_REDIS = client
+    _QUEUE_REDIS_REFRESH_AT = now + (14 * 60)
     return client
+
+
+# ----------------------------
+# RDS Proxy + IAM DB Authentication (token-as-password)
+# ----------------------------
+def _rds_iam_token(host: str, port: int, user: str, region: str) -> str:
+    """Generate IAM DB auth token for RDS Proxy; cache & refresh before expiry."""
+    global _RDS_IAM_TOKEN, _RDS_IAM_TOKEN_REFRESH_AT
+
+    now = time.time()
+    refresh_seconds = int(os.environ.get("DB_IAM_TOKEN_REFRESH_SECONDS", "840"))  # 14 minutes
+
+    if _RDS_IAM_TOKEN is not None and now < _RDS_IAM_TOKEN_REFRESH_AT:
+        return _RDS_IAM_TOKEN
+
+    rds = boto3.client("rds", config=_BOTO_CFG)
+    token = rds.generate_db_auth_token(
+        DBHostname=host,
+        Port=port,
+        DBUsername=user,
+        Region=region,
+    )
+
+    _RDS_IAM_TOKEN = token
+    _RDS_IAM_TOKEN_REFRESH_AT = now + refresh_seconds
+    return token
+
+
+def _db_conn():
+    """psycopg2 connection to Aurora via RDS Proxy using IAM auth token."""
+    global _DB_CONN, _DB_CONN_REFRESH_AT
+
+    if psycopg2 is None:
+        raise RuntimeError("psycopg2 not available. Add psycopg2-binary to your Lambda layer/package.")
+
+    now = time.time()
+    if _DB_CONN is not None and now < _DB_CONN_REFRESH_AT:
+        try:
+            with _DB_CONN.cursor() as c:
+                c.execute("SELECT 1;")
+            return _DB_CONN
+        except Exception:
+            try:
+                _DB_CONN.close()
+            except Exception:
+                pass
+            _DB_CONN = None
+
+    db_host = os.environ["DB_HOST"]  # RDS Proxy endpoint
+    db_port = int(os.environ.get("DB_PORT", "5432"))
+    db_name = os.environ["DB_NAME"]
+    db_user = os.environ["DB_USER"]
+    db_region = os.environ.get("DB_REGION") or os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION")
+    sslmode = os.environ.get("DB_SSLMODE", "require")
+
+    token = _rds_iam_token(host=db_host, port=db_port, user=db_user, region=db_region)
+
+    conn = psycopg2.connect(
+        host=db_host,
+        port=db_port,
+        dbname=db_name,
+        user=db_user,
+        password=token,
+        sslmode=sslmode,
+        connect_timeout=2,
+    )
+    conn.autocommit = True
+
+    _DB_CONN = conn
+    _DB_CONN_REFRESH_AT = now + (8 * 60)
+    return conn
+
+
+def _available_seats_from_db(event_id: str, category_id: str) -> int:
+    """Count available seats using your schema seats(event_id, category_id, status)."""
+    conn = _db_conn()
+    sql = """
+        SELECT COUNT(*)
+        FROM seats
+        WHERE event_id = %s
+          AND category_id = %s
+          AND status = 'AVAILABLE'
+    """
+    with conn.cursor() as cur:
+        cur.execute(sql, (event_id, category_id))
+        row = cur.fetchone()
+        return int(row[0] or 0)
 
 
 # ----------------------------
@@ -135,9 +251,7 @@ def _b64url(data: bytes) -> str:
 
 
 def _kms_sign_rs256(message: bytes, key_id: str) -> bytes:
-    kms = boto3.client("kms")
-    # For RSA_2048 SIGN_VERIFY keys:
-    # Use RSASSA_PKCS1_V1_5_SHA_256
+    kms = boto3.client("kms", config=_BOTO_CFG)
     resp = kms.sign(
         KeyId=key_id,
         Message=message,
@@ -159,12 +273,7 @@ def _mint_booking_token(
     now = int(time.time())
     exp = now + ttl_seconds
 
-    header = {
-        "alg": "RS256",
-        "typ": "JWT",
-        # Optional: include KMS key id as kid (makes verification simpler later)
-        "kid": key_id,
-    }
+    header = {"alg": "RS256", "typ": "JWT", "kid": key_id}
     payload = {
         "iss": issuer,
         "sub": user_sub,
@@ -177,29 +286,73 @@ def _mint_booking_token(
         "scope": "booking:queue",
     }
 
-    signing_input = f"{_b64url(json.dumps(header, separators=(',', ':')).encode())}.{_b64url(json.dumps(payload, separators=(',', ':')).encode())}".encode()
+    signing_input = (
+        f"{_b64url(json.dumps(header, separators=(',', ':')).encode())}."
+        f"{_b64url(json.dumps(payload, separators=(',', ':')).encode())}"
+    ).encode()
+
     sig = _kms_sign_rs256(signing_input, key_id=key_id)
-    token = f"{signing_input.decode()}.{_b64url(sig)}"
-    return token
+    return f"{signing_input.decode()}.{_b64url(sig)}"
 
 
 # ----------------------------
-# Queue logic
+# Queue keys
 # ----------------------------
-def _env_int(name: str, default: int) -> int:
-    try:
-        return int(os.environ.get(name, str(default)))
-    except Exception:
-        return default
+def _keys(event_id: str, category_id: str):
+    tag = f"{{{event_id}:{category_id}}}"
+
+    waiting_key = f"queue:{tag}:waiting"          # ZSET(sessionId -> enqueue_ts)
+    allowed_key = f"queue:{tag}:allowed"          # SET(sessionId)
+    active_key = f"queue:{tag}:active_count"      # STRING counter
+    soldout_key = f"queue:{tag}:soldout"          # STRING flag
+    session_prefix = f"queue:{tag}:session:"      # prefix + sessionId
+    promote_lock_key = f"queue:{tag}:promote_lock"  # short mutex
+
+    return waiting_key, allowed_key, active_key, soldout_key, session_prefix, promote_lock_key
 
 
-def handler(event, context):
-    # Validate auth
+# ----------------------------
+# Lua: promote N from waiting -> allowed + increment active_count (atomic in Queue cache)
+# ----------------------------
+_PROMOTE_LUA = r"""
+local waiting = KEYS[1]
+local allowed = KEYS[2]
+local active  = KEYS[3]
+local ttl     = tonumber(ARGV[1])
+local n       = tonumber(ARGV[2])
+
+if n == nil or n <= 0 then
+  return 0
+end
+
+local popped = redis.call('ZPOPMIN', waiting, n)
+local promoted = #popped / 2
+if promoted <= 0 then
+  return 0
+end
+
+for i = 1, #popped, 2 do
+  redis.call('SADD', allowed, popped[i])
+end
+
+redis.call('INCRBY', active, promoted)
+
+redis.call('EXPIRE', waiting, ttl)
+redis.call('EXPIRE', allowed, ttl)
+redis.call('EXPIRE', active, ttl)
+
+return promoted
+"""
+
+
+# ----------------------------
+# Handlers
+# ----------------------------
+def handle_enter(event, context):
     user_sub = _get_user_sub_from_rest_api(event)
     if not user_sub:
         return _resp(401, {"error": "UNAUTHORIZED", "message": "Missing Cognito authorizer claims"})
 
-    # Parse request
     try:
         body = _parse_json_body(event)
     except Exception:
@@ -210,34 +363,22 @@ def handler(event, context):
     if not event_id or not category_id:
         return _resp(400, {"error": "VALIDATION_ERROR", "message": "eventId and categoryId are required"})
 
-    # Config
     allowed_ttl = _env_int("QUEUE_ALLOWED_TTL_SECONDS", 600)
     poll_after = _env_int("QUEUE_POLL_AFTER_SECONDS", 5)
-    oversell_factor = _env_int("QUEUE_OVERSELL_FACTOR", 2)
-    max_active = _env_int("QUEUE_MAX_USERS_PER_EVENT_CATEGORY", 0)  # 0 means "no explicit cap"
+    max_active = _env_int("QUEUE_MAX_USERS_PER_EVENT_CATEGORY", 0)
 
     jwt_kms_key_id = os.environ["JWT_KMS_KEY_ID"]
     jwt_issuer = os.environ.get("JWT_ISSUER", "ticketing-queue")
 
-    # Keys
-    tag = f"{{{event_id}:{category_id}}}"
+    waiting_key, allowed_key, active_key, soldout_key, session_prefix, _ = _keys(event_id, category_id)
 
-    waiting_key = f"queue:{tag}:waiting"        # ZSET(sessionId -> enqueue_ts)
-    allowed_key = f"queue:{tag}:allowed"        # SET(sessionId), TTL
-    active_key  = f"queue:{tag}:active_count"   # STRING counter
-    soldout_key = f"queue:{tag}:soldout"        # STRING flag
-    session_key_prefix = f"queue:{tag}:session:"  # prefix + sessionId
-
-
-    # Connect cache
     try:
-        r = _active_users_cache_client()
+        q = _queue_cache()
     except Exception as e:
-        logger.exception("Active-users cache unavailable")
+        logger.exception("Queue cache unavailable")
         return _resp(500, {"error": "CACHE_UNAVAILABLE", "message": str(e)})
 
-    # SOLD_OUT short-circuit (optional flag you can set later from ops/admin)
-    if r.get(soldout_key) == "1":
+    if q.get(soldout_key) == "1":
         return _resp(200, {
             "status": "SOLD_OUT",
             "bookingToken": None,
@@ -247,30 +388,28 @@ def handler(event, context):
             "message": "Tickets are sold out for this category."
         })
 
-    # Create new sessionId per enter call (idempotency can be added later if needed)
     session_id = str(uuid.uuid4())
     enqueue_ts = int(time.time())
 
-    # Basic admission rule:
-    # - If max_active is set and active_count >= max_active => WAITING
-    # - Else ALLOWED (and increment active_count), with TTL lease.
-    # oversell_factor can be used later when you have seat inventory per category.
-    #
-    # For now, oversell_factor is a knob kept for parity with your design;
-    # we are not using it until seat inventory is wired in.
     try:
-        pipe = r.pipeline(transaction=True)
-
-        # ensure base keys exist
-        pipe.incrby(active_key, 0)  # initialize read
-        res = pipe.execute()
-        active_count = int(res[0] or 0)
+        active_count = int(q.get(active_key) or 0)
 
         if max_active > 0 and active_count >= max_active:
-            # WAITING: add to ZSET
-            pipe = r.pipeline(transaction=True)
+            # WAITING
+            pipe = q.pipeline(transaction=True)
             pipe.zadd(waiting_key, {session_id: enqueue_ts})
             pipe.expire(waiting_key, allowed_ttl)
+            pipe.setex(
+                f"{session_prefix}{session_id}",
+                allowed_ttl,
+                json.dumps({
+                    "status": "WAITING",
+                    "userSub": user_sub,
+                    "eventId": event_id,
+                    "categoryId": category_id,
+                    "createdAt": enqueue_ts,
+                })
+            )
             pipe.execute()
 
             token = _mint_booking_token(
@@ -283,17 +422,6 @@ def handler(event, context):
                 ttl_seconds=allowed_ttl,
             )
 
-            # store session meta (optional but useful)
-            
-            r.setex(f"{session_key_prefix}{session_id}", allowed_ttl, json.dumps({
-                "status": "WAITING",
-                "userSub": user_sub,
-                "eventId": event_id,
-                "categoryId": category_id,
-                "createdAt": enqueue_ts,
-            }))
-
-
             return _resp(200, {
                 "status": "WAITING",
                 "bookingToken": token,
@@ -303,12 +431,23 @@ def handler(event, context):
                 "message": "Please wait while we get you available seats."
             })
 
-        # ALLOWED: add to allowed set (lease with TTL) and increment active count
-        pipe = r.pipeline(transaction=True)
+        # ALLOWED
+        pipe = q.pipeline(transaction=True)
         pipe.sadd(allowed_key, session_id)
-        pipe.expire(allowed_key, allowed_ttl)
         pipe.incr(active_key)
+        pipe.expire(allowed_key, allowed_ttl)
         pipe.expire(active_key, allowed_ttl)
+        pipe.setex(
+            f"{session_prefix}{session_id}",
+            allowed_ttl,
+            json.dumps({
+                "status": "ALLOWED",
+                "userSub": user_sub,
+                "eventId": event_id,
+                "categoryId": category_id,
+                "createdAt": enqueue_ts,
+            })
+        )
         pipe.execute()
 
         token = _mint_booking_token(
@@ -320,16 +459,6 @@ def handler(event, context):
             session_id=session_id,
             ttl_seconds=allowed_ttl,
         )
-
-
-        r.setex(f"{session_key_prefix}{session_id}", allowed_ttl, json.dumps({
-            "status": "ALLOWED",
-            "userSub": user_sub,
-            "eventId": event_id,
-            "categoryId": category_id,
-            "createdAt": enqueue_ts,
-        }))
-
 
         return _resp(200, {
             "status": "ALLOWED",
@@ -343,3 +472,147 @@ def handler(event, context):
     except Exception as e:
         logger.exception("Queue enter failed")
         return _resp(500, {"error": "QUEUE_ENTER_FAILED", "message": str(e)})
+
+
+def handle_poll(event, context):
+    user_sub = _get_user_sub_from_rest_api(event)
+    if not user_sub:
+        return _resp(401, {"error": "UNAUTHORIZED", "message": "Missing Cognito authorizer claims"})
+
+    try:
+        body = _parse_json_body(event)
+    except Exception:
+        return _resp(400, {"error": "INVALID_JSON"})
+
+    event_id = body.get("eventId")
+    category_id = body.get("categoryId")
+    session_id = body.get("sessionId")
+    booking_token = body.get("bookingToken")  # optional; echoed back
+
+    if not event_id or not category_id or not session_id:
+        return _resp(400, {"error": "VALIDATION_ERROR", "message": "eventId, categoryId and sessionId are required"})
+
+    allowed_ttl = _env_int("QUEUE_ALLOWED_TTL_SECONDS", 600)
+    poll_after = _env_int("QUEUE_POLL_AFTER_SECONDS", 5)
+
+    max_active = _env_int("QUEUE_MAX_USERS_PER_EVENT_CATEGORY", 0)
+    oversell_factor = _env_int("QUEUE_OVERSELL_FACTOR", 2)
+
+    lock_seconds = _env_int("QUEUE_PROMOTION_LOCK_SECONDS", 1)
+    safety_cap = _env_int("QUEUE_MAX_PROMOTE_PER_POLL", 25)
+
+    waiting_key, allowed_key, active_key, soldout_key, session_prefix, promote_lock_key = _keys(event_id, category_id)
+    session_key = f"{session_prefix}{session_id}"
+
+    try:
+        q = _queue_cache()
+    except Exception as e:
+        logger.exception("Queue cache unavailable")
+        return _resp(500, {"error": "CACHE_UNAVAILABLE", "message": str(e)})
+
+    if q.get(soldout_key) == "1":
+        return _resp(200, {
+            "status": "SOLD_OUT",
+            "bookingToken": booking_token,
+            "sessionId": session_id,
+            "expiresInSeconds": allowed_ttl,
+            "pollAfterSeconds": poll_after,
+            "message": "Tickets are sold out for this category."
+        })
+
+    ttl = q.ttl(session_key)
+    if ttl is None or ttl < 0:
+        return _resp(200, {
+            "status": "EXPIRED",
+            "bookingToken": booking_token,
+            "sessionId": session_id,
+            "expiresInSeconds": 0,
+            "pollAfterSeconds": poll_after,
+            "message": "Queue session expired or not found. Please enter the queue again."
+        })
+
+    # Already allowed -> return immediately (avoid DB call)
+    if q.sismember(allowed_key, session_id):
+        return _resp(200, {
+            "status": "ALLOWED",
+            "bookingToken": booking_token,
+            "sessionId": session_id,
+            "expiresInSeconds": int(ttl),
+            "pollAfterSeconds": poll_after,
+            "message": "You are allowed to proceed. Fetch available seats."
+        })
+
+    promoted_this_poll = 0
+
+    # Promotion computed from 3 sources:
+    #   - active_count from Cache A (Queue cache)
+    #   - locked_seats from Cache B (not implemented yet => 0)
+    #   - available_seats from DB (via RDS Proxy IAM auth)
+    if max_active > 0:
+        lock_val = str(uuid.uuid4())
+        got_lock = bool(q.set(promote_lock_key, lock_val, nx=True, ex=lock_seconds))
+
+        if got_lock:
+            try:
+                active_count = int(q.get(active_key) or 0)
+                locked_seats = 0
+                available_seats = _available_seats_from_db(event_id, category_id)
+
+                available_users = max(max_active - active_count, 0)
+                effective_seats = max(available_seats - locked_seats, 0)
+                releasable_users = min(available_users, effective_seats * oversell_factor)
+
+                promote_n = min(int(releasable_users), int(safety_cap))
+                if promote_n > 0:
+                    promoted_this_poll = int(q.eval(
+                        _PROMOTE_LUA, 3,
+                        waiting_key, allowed_key, active_key,
+                        allowed_ttl, promote_n
+                    ))
+            except Exception:
+                logger.exception("Promotion step failed (non-fatal)")
+                promoted_this_poll = 0
+            # lock expires automatically
+
+    # Re-check membership after promotion
+    if q.sismember(allowed_key, session_id):
+        return _resp(200, {
+            "status": "ALLOWED",
+            "bookingToken": booking_token,
+            "sessionId": session_id,
+            "expiresInSeconds": int(ttl),
+            "pollAfterSeconds": poll_after,
+            "promotedThisPoll": int(promoted_this_poll),
+            "message": "You are allowed to proceed. Fetch available seats."
+        })
+
+    pos = q.zrank(waiting_key, session_id)  # 0-based
+    qlen = q.zcard(waiting_key)
+
+    return _resp(200, {
+        "status": "WAITING",
+        "bookingToken": booking_token,
+        "sessionId": session_id,
+        "expiresInSeconds": int(ttl),
+        "pollAfterSeconds": poll_after,
+        "promotedThisPoll": int(promoted_this_poll),
+        "position": (int(pos) + 1) if pos is not None else None,
+        "queueLength": int(qlen),
+        "message": "Still waiting. Please poll again."
+    })
+
+
+# ----------------------------
+# Main router (single Lambda, multiple routes)
+# ----------------------------
+def handler(event, context):
+    path = (event.get("resource") or event.get("path") or "").lower()
+    method = (event.get("httpMethod") or "").upper()
+
+    if method == "POST" and path.endswith("/queue/enter"):
+        return handle_enter(event, context)
+
+    if method == "POST" and path.endswith("/queue/poll"):
+        return handle_poll(event, context)
+
+    return _resp(404, {"error": "NOT_FOUND", "message": f"Unsupported route {method} {path}"})

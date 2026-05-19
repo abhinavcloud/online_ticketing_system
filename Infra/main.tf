@@ -90,6 +90,12 @@ module "Compute" {
     active_users_cache_port     = module.Cache.active_users_cache_port
     active_users_cache_name     = module.Cache.active_users_cache_name
 
+    #Seat Lock Cache
+    seat_lock_cache_endpoint =  module.Cache.seat_lock_cache_endpoint
+    seat_lock_cache_port  = module.Cache.seat_lock_cache_port
+    seat_lock_cache_name = module.Cache.seat_lock_cache_name
+
+
 }
 
 module "Cache" {
