@@ -173,8 +173,15 @@ resource "aws_vpc_security_group_egress_rule" "rds_proxy_sg_egress_rule" {
 
 
 # Create a aurora master username and passwords as a secret as secret manager to pass it to the RDS Proxy in next step
+
+
+resource "random_id" "aurora_secret_suffix" {
+  byte_length = 2 # 2 bytes => 4 hex chars (e.g., a3f9)
+}
+
+
 resource "aws_secretsmanager_secret" "aurora_master_secret" {
-  name = "aurora-master-credentials-3"
+  name = "aurora-master-credentials-${random_id.aurora_secret_suffix.hex}"
 }
 
 resource "aws_secretsmanager_secret_version" "aurora_master_secret_version" {
