@@ -112,7 +112,8 @@ resource "aws_vpc_endpoint" "kms" {
   vpc_id            = aws_vpc.vpc.id
   service_name      = "com.amazonaws.${var.region}.kms"
   vpc_endpoint_type = "Interface"
-  subnet_ids = var.private_subnets
+  subnet_ids =  local.private_subnet_ids
+
   security_group_ids = [
     aws_security_group.kms_vpce_sg.id,
   ]

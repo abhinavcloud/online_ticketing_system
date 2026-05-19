@@ -40,6 +40,13 @@ variable "private_subnets" {
 }
 
 
+locals {
+  private_subnet_ids = [for s in aws_subnet.private_subnets : s.id]
+  # or: values(aws_subnet.private)[*].id
+}
+
+
+
 variable "referenced_security_group_id" {
   type = string
   description = "Referncing the lambda security group"
