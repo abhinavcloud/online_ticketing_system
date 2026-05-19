@@ -13,3 +13,8 @@ output "subnet_03" {
 output "vpc_id" {
     value = aws_vpc.vpc.id
 }
+
+output "vpc_endpoint_sg" {
+    value = aws_security_group.kms_vpce_sg.id
+    
+}

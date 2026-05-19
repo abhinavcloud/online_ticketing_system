@@ -71,3 +71,56 @@ resource "aws_route" "private_route" {
   destination_cidr_block = "0.0.0.0/0"
   nat_gateway_id = aws_nat_gateway.regional_nat.id
 }
+
+# Create a VPC Endpoint for Lambda to connect to KMS
+
+## Create a security group for VPC Endpoint with Lambda SG as Ingress and Any as Egress
+
+resource "aws_security_group" "kms_vpce_sg" {
+  name        = "kms-vpce-sg"
+  description = "Security group for KMS VPC Interface Endpoint"
+  vpc_id      = aws_vpc.vpc.id
+
+  tags = {
+    Name = "kms-vpce-sg"
+ 
+  }
+}
+
+
+resource "aws_vpc_security_group_ingress_rule" "kms_vpce_ingress_from_lambda" {
+  security_group_id            = aws_security_group.kms_vpce_sg.id
+  ip_protocol                  = "tcp"
+  from_port                    = 443
+  to_port                      = 443
+  referenced_security_group_id = var.referenced_security_group_id
+  description                  = "Allow Lambda SG to reach KMS VPCE on 443"
+}
+
+
+
+resource "aws_vpc_security_group_egress_rule" "kms_vpce_egress_all" {
+  security_group_id = aws_security_group.kms_vpce_sg.id
+  ip_protocol       = "-1"
+  cidr_ipv4         = "0.0.0.0/0"
+  description       = "Allow VPCE responses"
+}
+
+
+
+resource "aws_vpc_endpoint" "kms" {
+  vpc_id            = aws_vpc.vpc.id
+  service_name      = "com.amazonaws.${var.region}.kms"
+  vpc_endpoint_type = "Interface"
+  subnet_ids = var.private_subnets
+  security_group_ids = [
+    aws_security_group.kms_vpce_ingress_from_lambda.id,
+  ]
+
+  private_dns_enabled = true
+
+  tags = {
+    Name = "VPC_Endpoint_from_Lambda_to_KMS"
+    Type = "VPC_Endpoint"
+  }
+}

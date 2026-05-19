@@ -40,3 +40,7 @@ variable "private_subnets" {
 }
 
 
+variable "referenced_security_group_id" {
+  type = string
+  description = "Referncing the lambda security group"
+}

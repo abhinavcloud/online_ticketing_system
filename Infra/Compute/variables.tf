@@ -126,4 +126,4 @@ variable "browse_cache_ttl_seconds" {
 variable "active_users_cache_endpoint" { type = string }
 variable "active_users_cache_port"     { type = number }
 variable "active_users_cache_name"     { type = string }
-
+variable "vpc_endpoint_security_group" { type = string }

@@ -147,6 +147,17 @@ resource "aws_vpc_security_group_egress_rule" "elasticache_sg_egress_rule" {
   to_port     = 6379
 }
 
+# Create an Egress rule for Lambda Security Group to VPC Endpoint
+resource "aws_vpc_security_group_egress_rule" "lambda_to_kms_vpce_443" {
+  security_group_id            = var.security_group_id
+  ip_protocol                  = "tcp"
+  from_port                    = 443
+  to_port                      = 443
+  referenced_security_group_id = var.vpc_endpoint_security_group
+  description                  = "Allow Lambda to call KMS via VPCE on 443"
+}
+
+
 
 # Create a Lambda with IAM Role and Security Group (Browse Service)
 data "archive_file" "browse_layer_zip" {

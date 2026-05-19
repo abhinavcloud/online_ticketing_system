@@ -5,6 +5,19 @@ data "aws_availability_zones" "az" {
 }
 
 
+# Create a Security Group for Lambda 
+# Defining this out of Compute Module to avoid circular dependency between lambda, aurora and elasticache security groups
+resource "aws_security_group" "lambda_sg" {
+  name        = "lambda-sg"
+  description = "Allow TLS inbound traffic from lambda"
+  vpc_id      = module.Network.vpc_id
+
+  tags = {
+    Application = "Lambda"
+    Type = "Security_Group"
+  }
+}
+
 module "Network" {
 
     source = "./Network/"
@@ -12,6 +25,8 @@ module "Network" {
     vpc_cidr    = var.vpc_cidr
     region = data.aws_region.current.id
     availability_zones   = data.aws_availability_zones.az.names
+    referenced_security_group_id = aws_security_group.lambda_sg.id
+
 }
 
 
@@ -30,18 +45,7 @@ module "Database" {
 }
 
 
-# Create a Security Group for Lambda 
-# Defining this out of Compute Module to avoid circular dependency between lambda, aurora and elasticache security groups
-resource "aws_security_group" "lambda_sg" {
-  name        = "lambda-sg"
-  description = "Allow TLS inbound traffic from lambda"
-  vpc_id      = module.Network.vpc_id
 
-  tags = {
-    Application = "Lambda"
-    Type = "Security_Group"
-  }
-}
 
 module "Compute" {
     source = "./Compute/"
@@ -63,6 +67,8 @@ module "Compute" {
     security_group_id = aws_security_group.lambda_sg.id
     db_proxy_security_group = module.Database.db_proxy_security_group
     elasticache_security_group = module.Cache.elasticache_security_group
+    vpc_endpoint_security_group = module.Network.vpc_endpoint_sg
+
     
     # DB Proxy Details    
     db_proxy_endpoint = module.Database.db_proxy_endpoint
