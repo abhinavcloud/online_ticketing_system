@@ -220,12 +220,14 @@ def handler(event, context):
     jwt_issuer = os.environ.get("JWT_ISSUER", "ticketing-queue")
 
     # Keys
-    base = f"{event_id}:{category_id}"
-    waiting_key = f"queue:waiting:{base}"     # ZSET(sessionId -> enqueue_ts)
-    allowed_key = f"queue:allowed:{base}"     # SET(sessionId), TTL
-    active_key = f"queue:active_count:{base}" # STRING counter
-    soldout_key = f"queue:soldout:{base}"     # STRING flag
-    session_key = f"queue:session:{base}:"    # prefix + sessionId
+    tag = f"{{{event_id}:{category_id}}}"
+
+    waiting_key = f"queue:{tag}:waiting"        # ZSET(sessionId -> enqueue_ts)
+    allowed_key = f"queue:{tag}:allowed"        # SET(sessionId), TTL
+    active_key  = f"queue:{tag}:active_count"   # STRING counter
+    soldout_key = f"queue:{tag}:soldout"        # STRING flag
+    session_key_prefix = f"queue:{tag}:session:"  # prefix + sessionId
+
 
     # Connect cache
     try:
@@ -282,13 +284,15 @@ def handler(event, context):
             )
 
             # store session meta (optional but useful)
-            r.setex(f"{session_key}{session_id}", allowed_ttl, json.dumps({
+            
+            r.setex(f"{session_key_prefix}{session_id}", allowed_ttl, json.dumps({
                 "status": "WAITING",
                 "userSub": user_sub,
                 "eventId": event_id,
                 "categoryId": category_id,
                 "createdAt": enqueue_ts,
             }))
+
 
             return _resp(200, {
                 "status": "WAITING",
@@ -317,13 +321,15 @@ def handler(event, context):
             ttl_seconds=allowed_ttl,
         )
 
-        r.setex(f"{session_key}{session_id}", allowed_ttl, json.dumps({
-            "status": "ALLOWED",
+
+        r.setex(f"{session_key_prefix}{session_id}", allowed_ttl, json.dumps({
+            "status": "WAITING",
             "userSub": user_sub,
             "eventId": event_id,
             "categoryId": category_id,
             "createdAt": enqueue_ts,
         }))
+
 
         return _resp(200, {
             "status": "ALLOWED",
