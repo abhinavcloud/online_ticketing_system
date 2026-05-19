@@ -281,3 +281,23 @@ If your API Gateway is REST API, use these shapes instead.
   "requestContext": {}
 }
 ```
+
+# Post Queue Service Lambda requestContext
+
+{
+  "resource": "/queue/enter",
+  "path": "/queue/enter",
+  "httpMethod": "POST",
+  "headers": {
+    "content-type": "application/json"
+  },
+  "requestContext": {
+    "authorizer": {
+      "claims": {
+        "sub": "test-sub-123"
+      }
+    }
+  },
+  "body": "{\"eventId\":\"EVENT_ID_UUID\",\"categoryId\":\"CATEGORY_ID_UUID\"}",
+  "isBase64Encoded": false
+}
