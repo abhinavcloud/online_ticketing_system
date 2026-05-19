@@ -137,7 +137,7 @@ CREATE TABLE IF NOT EXISTS seats (
 
   
 CREATE INDEX IF NOT EXISTS idx_seats_event_category_status
-  ON seats(event_id, category_id, s
+  ON seats(event_id, category_id, status);
 
 -- =====================================
 -- 5) OPTIONAL SEED
