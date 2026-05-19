@@ -323,7 +323,7 @@ def handler(event, context):
 
 
         r.setex(f"{session_key_prefix}{session_id}", allowed_ttl, json.dumps({
-            "status": "WAITING",
+            "status": "ALLOWED",
             "userSub": user_sub,
             "eventId": event_id,
             "categoryId": category_id,
