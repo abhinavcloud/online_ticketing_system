@@ -295,6 +295,14 @@ resource "aws_lambda_layer_version" "queue_deps" {
   compatible_runtimes = ["python3.12"]
 }
 
+
+data "archive_file" "queue_lambda_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/../../Code/queue_service"
+  output_path = "${path.module}/artifacts/queue_service.zip"
+}
+
+
 resource "aws_lambda_function" "queue_service" {
   function_name = "queue-service"
   description   = "Queue Service: POST /queue/enter"
