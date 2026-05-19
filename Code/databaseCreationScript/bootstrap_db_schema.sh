@@ -135,6 +135,10 @@ CREATE TABLE IF NOT EXISTS seats (
   UNIQUE(event_id, seat_label)
 );
 
+  
+CREATE INDEX IF NOT EXISTS idx_seats_event_category_status
+  ON seats(event_id, category_id, s
+
 -- =====================================
 -- 5) OPTIONAL SEED
 -- =====================================
