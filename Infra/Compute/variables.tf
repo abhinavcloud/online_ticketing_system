@@ -121,3 +121,9 @@ variable "browse_cache_ttl_seconds" {
   default     = 30
 }
 
+
+
+variable "active_users_cache_endpoint" { type = string }
+variable "active_users_cache_port"     { type = number }
+variable "active_users_cache_name"     { type = string }
+

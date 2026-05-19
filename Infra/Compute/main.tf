@@ -216,6 +216,132 @@ resource "aws_lambda_function" "browse_service" {
 }
 
 # Create a Lambda with IAM Role and Security Group (Queue Service)
+## Create a KMS key for JWT signing
+resource "aws_kms_key" "queue_jwt_signing_key" {
+  description              = "KMS asymmetric key for Queue Service JWT signing"
+  key_usage                = "SIGN_VERIFY"
+  customer_master_key_spec = "RSA_2048"
+  deletion_window_in_days  = 7
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      # Full admin to account root
+      {
+        Sid: "AllowRootAdmin",
+        Effect: "Allow",
+        Principal: { AWS: "arn:aws:iam::${var.account_id}:root" },
+        Action: "kms:*",
+        Resource: "*"
+      },
+      # Allow Lambda role to sign + fetch public key
+      {
+        Sid: "AllowLambdaUseKey",
+        Effect: "Allow",
+        Principal: { AWS: aws_iam_role.lambda_role_ticket_system.arn },
+        Action: [
+          "kms:Sign",
+          "kms:GetPublicKey",
+          "kms:DescribeKey"
+        ],
+        Resource: "*"
+      }
+    ]
+  })
+}
+
+resource "aws_kms_alias" "queue_jwt_signing_key_alias" {
+  name          = "alias/queue-jwt-signing"
+  target_key_id = aws_kms_key.queue_jwt_signing_key.key_id
+}
+
+##IAM permissions for Queue Lambda
+resource "aws_iam_policy" "lambda_kms_sign_policy" {
+  name        = "lambda-queue-kms-sign"
+  description = "Allow Queue service lambda to sign JWT with KMS"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Sid: "AllowKmsSign",
+      Effect: "Allow",
+      Action: [
+        "kms:Sign",
+        "kms:GetPublicKey",
+        "kms:DescribeKey"
+      ],
+      Resource: aws_kms_key.queue_jwt_signing_key.arn
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_attach_kms_sign" {
+  role       = aws_iam_role.lambda_role_ticket_system.name
+  policy_arn = aws_iam_policy.lambda_kms_sign_policy.arn
+}
+
+
+data "archive_file" "queue_layer_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/../../Code/queue_service_layer"
+  output_path = "${path.module}/artifacts/queue_service_layer.zip"
+}
+
+
+resource "aws_lambda_layer_version" "queue_deps" {
+  layer_name          = "queue-service-deps"
+  filename            = data.archive_file.queue_layer_zip.output_path
+  source_code_hash    = data.archive_file.queue_layer_zip.output_base64sha256
+  compatible_runtimes = ["python3.12"]
+}
+
+resource "aws_lambda_function" "queue_service" {
+  function_name = "queue-service"
+  description   = "Queue Service: POST /queue/enter"
+  runtime       = "python3.12"
+  handler       = "app.handler"
+  timeout       = 60
+  memory_size   = 512
+
+  filename         = data.archive_file.queue_lambda_zip.output_path
+  source_code_hash = data.archive_file.queue_lambda_zip.output_base64sha256
+
+  role = aws_iam_role.lambda_role_ticket_system.arn
+
+  layers = [
+    aws_lambda_layer_version.queue_deps.arn
+  ]
+
+  vpc_config {
+    subnet_ids         = var.subnet_group
+    security_group_ids = [var.security_group_id]
+  }
+
+  environment {
+    variables = {
+      # Valkey active-users cache (IAM auth)
+      ACTIVE_USERS_CACHE_ENDPOINT = var.active_users_cache_endpoint
+      ACTIVE_USERS_CACHE_PORT     = tostring(var.active_users_cache_port)
+      ACTIVE_USERS_CACHE_NAME     = var.active_users_cache_name
+      ELASTICACHE_USER_ID         = var.elasticache_user_id
+
+      # Queue behavior knobs (match your API defaults)
+      QUEUE_ALLOWED_TTL_SECONDS = "600"
+      QUEUE_POLL_AFTER_SECONDS  = "5"
+      QUEUE_OVERSELL_FACTOR     = "2"
+
+      # JWT signing via KMS
+      JWT_KMS_KEY_ID = aws_kms_key.queue_jwt_signing_key.key_id
+      JWT_ALG        = "RS256"
+      JWT_ISSUER     = "ticketing-queue"
+    }
+  }
+
+  tags = {
+    Service = "ticketing"
+    Name    = "queue-service"
+  }
+}
 
 
 
