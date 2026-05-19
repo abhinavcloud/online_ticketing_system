@@ -180,8 +180,12 @@ resource "random_id" "aurora_secret_suffix" {
 }
 
 
+#resource "aws_secretsmanager_secret" "aurora_master_secret" {
+#  name = "aurora-master-credentials-${random_id.aurora_secret_suffix.hex}"
+#}
+
 resource "aws_secretsmanager_secret" "aurora_master_secret" {
-  name = "aurora-master-credentials-${random_id.aurora_secret_suffix.hex}"
+  name = "aurora-master-credentials-3"
 }
 
 resource "aws_secretsmanager_secret_version" "aurora_master_secret_version" {
