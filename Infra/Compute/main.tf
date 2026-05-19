@@ -337,8 +337,7 @@ resource "aws_lambda_function" "queue_service" {
       QUEUE_ALLOWED_TTL_SECONDS = "600"
       QUEUE_POLL_AFTER_SECONDS  = "5"
       QUEUE_OVERSELL_FACTOR     = "2"
-      QUEUE_MAX_USERS_PER_EVENT_CATEGORY = 1
-
+      QUEUE_MAX_USERS_PER_EVENT_CATEGORY = 1 # This will allow only one user to go to seat booking from queue. Raise it to 50 or 100 or whatever no the system is comfortable with to compete for seats simultaneously.
       # JWT signing via KMS
       JWT_KMS_KEY_ID = aws_kms_key.queue_jwt_signing_key.key_id
       JWT_ALG        = "RS256"
