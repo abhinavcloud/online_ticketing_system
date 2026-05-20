@@ -389,6 +389,95 @@ environment {
 
 
 # Create a Lambda with IAM Role and Security Group (Seat Availbility Service)
+data "archive_file" "seat_availability_lambda_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/../../Code/seat_availability_service"
+  output_path = "${path.module}/artifacts/seat_availability_service.zip"
+}
+
+
+data "archive_file" "seat_availability_layer_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/../../Code/seat_availability_layer"
+  output_path = "${path.module}/artifacts/seat_availability_layer.zip"
+}
+
+resource "aws_lambda_layer_version" "seat_availability_deps" {
+  layer_name          = "seat-availability-service-deps"
+  filename            = data.archive_file.seat_availability_layer_zip.output_path
+  source_code_hash    = data.archive_file.seat_availability_layer_zip.output_base64sha256
+  compatible_runtimes = ["python3.12"]
+}
+
+resource "aws_lambda_function" "seat_availability_service" {
+  function_name = "seat-availability-service"
+  description   = "Seat Availability Service: GET /v1/events/{eventId}/seats?category_id=... (read-only)"
+  runtime       = "python3.12"
+  handler       = "app.handler"
+  timeout       = 30
+  memory_size   = 512
+
+  filename         = data.archive_file.seat_availability_lambda_zip.output_path
+  source_code_hash = data.archive_file.seat_availability_lambda_zip.output_base64sha256
+
+  role = aws_iam_role.lambda_role_ticket_system.arn
+
+  layers = [
+    aws_lambda_layer_version.seat_availability_deps.arn
+  ]
+
+  vpc_config {
+    subnet_ids         = var.subnet_group
+    security_group_ids = [var.security_group_id]
+  }
+
+  environment {
+    variables = {
+      # Use APP_REGION (do NOT set AWS_REGION - it's reserved by Lambda)
+      APP_REGION = var.region
+
+      # -----------------------------
+      # DB (RDS Proxy IAM)
+      # -----------------------------
+      DB_HOST = var.db_proxy_endpoint
+      DB_PORT = tostring(var.db_port)
+      DB_NAME = var.db_name
+      DB_USER = var.db_user
+
+      DB_SSLMODE                 = "require"
+      DB_IAM_TOKEN_REFRESH_SECONDS = "840"
+
+      # -----------------------------
+      # Cache A (Queue cache == Active Users cache)
+      # Used to verify sessionId is ALLOWED
+      # -----------------------------
+      ACTIVE_USERS_CACHE_ENDPOINT = var.active_users_cache_endpoint
+      ACTIVE_USERS_CACHE_PORT     = tostring(var.active_users_cache_port)
+      ACTIVE_USERS_CACHE_NAME     = var.active_users_cache_name
+      ELASTICACHE_USER_ID         = var.elasticache_user_id
+
+      # -----------------------------
+      # Cache B (Seat Lock cache) - READ ONLY here
+      # Reservation service will write locks to this cache
+      # -----------------------------
+      SEAT_LOCK_CACHE_ENDPOINT          = var.seat_lock_cache_endpoint
+      SEAT_LOCK_CACHE_PORT              = tostring(var.seat_lock_cache_port)
+      SEAT_LOCK_CACHE_NAME              = var.seat_lock_cache_name
+      SEAT_LOCK_ELASTICACHE_USER_ID     = var.elasticache_user_id
+
+      # -----------------------------
+      # Behavior knobs
+      # -----------------------------
+      SEATS_PAGE_SIZE          = "200"
+      SHOW_LOCK_EXPIRES_AT     = "false"
+    }
+  }
+
+  tags = {
+    Service = "ticketing"
+    Name    = "seat-availability-service"
+  }
+}
 
 
 # Create a Lambda with IAM Role and Security Group (Reservation  Service)
