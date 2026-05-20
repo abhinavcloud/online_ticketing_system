@@ -182,8 +182,6 @@ def _rds_iam_token(host: str, port: int, user: str, region: str) -> str:
     return token
 
 
-# CHANGED: removed SELECT 1 health check from warm path; reconnect on OperationalError
-#          is handled in _available_seats_from_db instead.
 def _db_conn():
     """psycopg2 connection to Aurora via RDS Proxy using IAM auth token."""
     global _DB_CONN, _DB_CONN_REFRESH_AT
@@ -193,7 +191,16 @@ def _db_conn():
 
     now = time.time()
     if _DB_CONN is not None and now < _DB_CONN_REFRESH_AT:
-        return _DB_CONN
+        try:
+            with _DB_CONN.cursor() as c:
+                c.execute("SELECT 1;")
+            return _DB_CONN
+        except Exception:
+            try:
+                _DB_CONN.close()
+            except Exception:
+                pass
+            _DB_CONN = None
 
     db_host = os.environ["DB_HOST"]  # RDS Proxy endpoint
     db_port = int(os.environ.get("DB_PORT", "5432"))
@@ -220,11 +227,9 @@ def _db_conn():
     return conn
 
 
-# CHANGED: added one retry on OperationalError; resets cached connection so _db_conn()
-#          reconnects on the second attempt.
 def _available_seats_from_db(event_id: str, category_id: str) -> int:
     """Count available seats using your schema seats(event_id, category_id, status)."""
-    global _DB_CONN, _DB_CONN_REFRESH_AT
+    conn = _db_conn()
     sql = """
         SELECT COUNT(*)
         FROM seats
@@ -232,18 +237,10 @@ def _available_seats_from_db(event_id: str, category_id: str) -> int:
           AND category_id = %s
           AND status = 'AVAILABLE'
     """
-    for attempt in range(2):
-        try:
-            conn = _db_conn()
-            with conn.cursor() as cur:
-                cur.execute(sql, (event_id, category_id))
-                return int(cur.fetchone()[0] or 0)
-        except psycopg2.OperationalError:
-            if attempt == 0:
-                _DB_CONN = None
-                _DB_CONN_REFRESH_AT = 0.0
-            else:
-                raise
+    with conn.cursor() as cur:
+        cur.execute(sql, (event_id, category_id))
+        row = cur.fetchone()
+        return int(row[0] or 0)
 
 
 # ----------------------------
@@ -347,33 +344,6 @@ redis.call('EXPIRE', active, ttl)
 return promoted
 """
 
-# ----------------------------
-# NEW Lua: atomic check-and-allow for handle_enter.
-# Returns 1 if session was allowed, 0 if queue is full (caller puts session in WAITING).
-# ----------------------------
-_ENTER_ALLOW_LUA = r"""
-local allowed_key = KEYS[1]
-local active_key  = KEYS[2]
-local session_key = KEYS[3]
-local max_active  = tonumber(ARGV[1])
-local session_id  = ARGV[2]
-local ttl         = tonumber(ARGV[3])
-local meta_json   = ARGV[4]
-
-local count = tonumber(redis.call('GET', active_key) or '0')
-
-if max_active > 0 and count >= max_active then
-  return 0
-end
-
-redis.call('SADD',   allowed_key, session_id)
-redis.call('INCR',   active_key)
-redis.call('EXPIRE', allowed_key, ttl)
-redis.call('EXPIRE', active_key,  ttl)
-redis.call('SETEX',  session_key, ttl, meta_json)
-return 1
-"""
-
 
 # ----------------------------
 # Handlers
@@ -420,36 +390,26 @@ def handle_enter(event, context):
 
     session_id = str(uuid.uuid4())
     enqueue_ts = int(time.time())
-    session_key = f"{session_prefix}{session_id}"
 
-    # CHANGED: replaced non-atomic read-then-pipeline with _ENTER_ALLOW_LUA so the
-    #          active_count check and the SADD/INCR are a single atomic operation.
     try:
-        allowed = int(q.eval(
-            _ENTER_ALLOW_LUA, 3,
-            allowed_key, active_key, session_key,
-            max_active, session_id, allowed_ttl,
-            json.dumps({
-                "status": "ALLOWED",
-                "userSub": user_sub,
-                "eventId": event_id,
-                "categoryId": category_id,
-                "createdAt": enqueue_ts,
-            }),
-        ))
+        active_count = int(q.get(active_key) or 0)
 
-        if not allowed:
+        if max_active > 0 and active_count >= max_active:
             # WAITING
             pipe = q.pipeline(transaction=True)
             pipe.zadd(waiting_key, {session_id: enqueue_ts})
             pipe.expire(waiting_key, allowed_ttl)
-            pipe.setex(session_key, allowed_ttl, json.dumps({
-                "status": "WAITING",
-                "userSub": user_sub,
-                "eventId": event_id,
-                "categoryId": category_id,
-                "createdAt": enqueue_ts,
-            }))
+            pipe.setex(
+                f"{session_prefix}{session_id}",
+                allowed_ttl,
+                json.dumps({
+                    "status": "WAITING",
+                    "userSub": user_sub,
+                    "eventId": event_id,
+                    "categoryId": category_id,
+                    "createdAt": enqueue_ts,
+                })
+            )
             pipe.execute()
 
             token = _mint_booking_token(
@@ -461,6 +421,7 @@ def handle_enter(event, context):
                 session_id=session_id,
                 ttl_seconds=allowed_ttl,
             )
+
             return _resp(200, {
                 "status": "WAITING",
                 "bookingToken": token,
@@ -471,6 +432,24 @@ def handle_enter(event, context):
             })
 
         # ALLOWED
+        pipe = q.pipeline(transaction=True)
+        pipe.sadd(allowed_key, session_id)
+        pipe.incr(active_key)
+        pipe.expire(allowed_key, allowed_ttl)
+        pipe.expire(active_key, allowed_ttl)
+        pipe.setex(
+            f"{session_prefix}{session_id}",
+            allowed_ttl,
+            json.dumps({
+                "status": "ALLOWED",
+                "userSub": user_sub,
+                "eventId": event_id,
+                "categoryId": category_id,
+                "createdAt": enqueue_ts,
+            })
+        )
+        pipe.execute()
+
         token = _mint_booking_token(
             key_id=jwt_kms_key_id,
             issuer=jwt_issuer,
@@ -480,6 +459,7 @@ def handle_enter(event, context):
             session_id=session_id,
             ttl_seconds=allowed_ttl,
         )
+
         return _resp(200, {
             "status": "ALLOWED",
             "bookingToken": token,
@@ -550,20 +530,6 @@ def handle_poll(event, context):
             "pollAfterSeconds": poll_after,
             "message": "Queue session expired or not found. Please enter the queue again."
         })
-
-    # CHANGED: verify the session belongs to the calling user before doing anything else.
-    meta_raw = q.get(session_key)
-    if not meta_raw:
-        return _resp(200, {
-            "status": "EXPIRED",
-            "bookingToken": booking_token,
-            "sessionId": session_id,
-            "expiresInSeconds": 0,
-            "pollAfterSeconds": poll_after,
-            "message": "Queue session expired or not found. Please enter the queue again."
-        })
-    if json.loads(meta_raw).get("userSub") != user_sub:
-        return _resp(403, {"error": "FORBIDDEN", "message": "Session does not belong to this user"})
 
     # Already allowed -> return immediately (avoid DB call)
     if q.sismember(allowed_key, session_id):
@@ -636,47 +602,6 @@ def handle_poll(event, context):
     })
 
 
-# NEW: decrement active_count when the client completes or abandons booking.
-#      srem returns 1 only if session was in the allowed set, preventing double-decrement
-#      if the client calls release more than once.
-def handle_release(event, context):
-    user_sub = _get_user_sub_from_rest_api(event)
-    if not user_sub:
-        return _resp(401, {"error": "UNAUTHORIZED", "message": "Missing Cognito authorizer claims"})
-
-    try:
-        body = _parse_json_body(event)
-    except Exception:
-        return _resp(400, {"error": "INVALID_JSON"})
-
-    event_id = body.get("eventId")
-    category_id = body.get("categoryId")
-    session_id = body.get("sessionId")
-    if not event_id or not category_id or not session_id:
-        return _resp(400, {"error": "VALIDATION_ERROR", "message": "eventId, categoryId and sessionId are required"})
-
-    _, allowed_key, active_key, _, session_prefix, _ = _keys(event_id, category_id)
-    session_key = f"{session_prefix}{session_id}"
-
-    try:
-        q = _queue_cache()
-    except Exception as e:
-        logger.exception("Queue cache unavailable")
-        return _resp(500, {"error": "CACHE_UNAVAILABLE", "message": str(e)})
-
-    meta_raw = q.get(session_key)
-    if not meta_raw:
-        return _resp(404, {"error": "SESSION_NOT_FOUND"})
-    if json.loads(meta_raw).get("userSub") != user_sub:
-        return _resp(403, {"error": "FORBIDDEN"})
-
-    if q.srem(allowed_key, session_id):
-        q.decr(active_key)
-    q.delete(session_key)
-
-    return _resp(200, {"status": "RELEASED"})
-
-
 # ----------------------------
 # Main router (single Lambda, multiple routes)
 # ----------------------------
@@ -689,8 +614,5 @@ def handler(event, context):
 
     if method == "POST" and path.endswith("/queue/poll"):
         return handle_poll(event, context)
-
-    if method == "POST" and path.endswith("/queue/release"):
-        return handle_release(event, context)
 
     return _resp(404, {"error": "NOT_FOUND", "message": f"Unsupported route {method} {path}"})
