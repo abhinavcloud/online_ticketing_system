@@ -391,15 +391,15 @@ environment {
 # Create a Lambda with IAM Role and Security Group (Seat Availbility Service)
 data "archive_file" "seat_availability_lambda_zip" {
   type        = "zip"
-  source_dir  = "${path.module}/../../Code/seat_availability_service"
-  output_path = "${path.module}/artifacts/seat_availability_service.zip"
+  source_dir  = "${path.module}/../../Code/seat_availibility_service"
+  output_path = "${path.module}/artifacts/seat_availibility_service.zip"
 }
 
 
 data "archive_file" "seat_availability_layer_zip" {
   type        = "zip"
-  source_dir  = "${path.module}/../../Code/seat_availability_layer"
-  output_path = "${path.module}/artifacts/seat_availability_layer.zip"
+  source_dir  = "${path.module}/../../Code/seat_availibility_service_layer"
+  output_path = "${path.module}/artifacts/sseat_availibility_service_layer.zip"
 }
 
 resource "aws_lambda_layer_version" "seat_availability_deps" {
