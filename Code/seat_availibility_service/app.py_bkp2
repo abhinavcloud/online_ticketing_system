@@ -402,10 +402,6 @@ def handle_get_seats(event, context):
     if not session_id:
         return _resp(401, {"error": "INVALID_BOOKING_TOKEN", "message": "sessionId missing"})
 
-    # CHANGED: reject tokens not scoped for queue booking
-    if bt.get("scope") != "booking:queue":
-        return _resp(401, {"error": "INVALID_BOOKING_TOKEN", "message": "invalid token scope"})
-
     # Ensure session is currently ALLOWED (queue cache)
     try:
         q = _queue_cache()
@@ -414,8 +410,7 @@ def handle_get_seats(event, context):
             return _resp(200, {
                 "eventId": event_id,
                 "categoryId": category_id,
-                # CHANGED: use time.gmtime() to guarantee UTC; %z is unreliable on some Python builds
-                "asOf": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "asOf": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
                 "seats": [],
                 "status": "WAITING",
                 "message": "You are not admitted yet. Please poll and try again."
@@ -441,29 +436,16 @@ def handle_get_seats(event, context):
         lock_keys = [_seat_lock_key(event_id, category_id, s["seatId"]) for s in seats]
         lock_vals = sl.mget(lock_keys) if lock_keys else []
 
-        # CHANGED: batch all pttl calls into a single pipeline to avoid N sequential
-        # round trips when show_lock_expiry is enabled.
-        lock_ttls = {}
-        if show_lock_expiry and lock_vals:
-            locked_indices = [i for i, v in enumerate(lock_vals) if v is not None]
-            if locked_indices:
-                pipe = sl.pipeline(transaction=False)
-                for i in locked_indices:
-                    pipe.pttl(lock_keys[i])
-                lock_ttls = dict(zip(locked_indices, pipe.execute()))
-
         for idx, s in enumerate(seats):
             # Only overlay LOCKED if seat is AVAILABLE in DB
             if s.get("status") == "AVAILABLE" and lock_vals and lock_vals[idx] is not None:
                 s["status"] = "LOCKED"
                 if show_lock_expiry:
-                    ttl_ms = lock_ttls.get(idx)
+                    ttl_ms = sl.pttl(lock_keys[idx])
                     if ttl_ms and ttl_ms > 0:
-                        # CHANGED: use time.gmtime() for UTC; time.localtime() is not
-                        # guaranteed UTC and %z can be empty on some Python builds
                         s["lockExpiresAt"] = time.strftime(
-                            "%Y-%m-%dT%H:%M:%SZ",
-                            time.gmtime(time.time() + (ttl_ms / 1000.0)),
+                            "%Y-%m-%dT%H:%M:%S%z",
+                            time.localtime(time.time() + (ttl_ms / 1000.0)),
                         )
 
     except Exception as e:
@@ -473,11 +455,8 @@ def handle_get_seats(event, context):
     return _resp(200, {
         "eventId": event_id,
         "categoryId": category_id,
-        # CHANGED: use time.gmtime() to guarantee UTC; %z is unreliable on some Python builds
-        "asOf": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "seats": seats,
-        # CHANGED: signal to the client when the result was truncated by SEATS_PAGE_SIZE
-        "hasMore": len(seats) == limit,
+        "asOf": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "seats": seats
     })
 
 
