@@ -51,7 +51,7 @@ jobs:
 
 
             - name: terraform-plan-show
-              if: steps.plan.outcome == 'success' || steps.plan.outcome == 'failure'
+              if: always()
               run: |
                   terraform show tfplan > tfplan.txt
 
