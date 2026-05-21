@@ -322,6 +322,15 @@ def _reservation_seats_key(event_id: str, category_id: str, reservation_id: str)
     tag = _tag(event_id, category_id)
     return f"reservation:{tag}:{reservation_id}:seats"
 
+def _reservation_meta_key(event_id: str, category_id: str, reservation_id: str) -> str:
+    tag = _tag(event_id, category_id)
+    return f"reservation:{tag}:{reservation_id}:meta"
+
+
+def _reserve_idempotency_key(event_id: str, category_id: str, user_sub: str, idem_key: str) -> str:
+    tag = _tag(event_id, category_id)
+    # Keep it in the same tag slot for cluster safety
+    return f"reserve:{tag}:{user_sub}:{idem_key}"
 
 # ----------------------------
 # DB functions
@@ -410,38 +419,54 @@ def _insert_failed_reservation(reservation_id: str, user_sub: str, event_id: str
         )
 
 
-# ----------------------------
-# Valkey Lua for atomic multi-seat lock (all-or-none)
-# KEYS[1..N-1]: seat lock keys
-# KEYS[N]:      reservation seats key (same hash tag -> same cluster slot)
-# ARGV[1]:      ttl_seconds
-# ARGV[2]:      lock value (reservation_id)
-# ARGV[3]:      seats JSON (stored under reservation key with identical TTL)
-# ----------------------------
-
+# KEYS[1..N-3]: seat lock keys# KEYS[1..N-3]: seat lock reservation seats key (same hash tag -> same cluster slot)
+# KEYS[N-1]:    reservation meta key  (same hash tag -> same cluster slot)
+# KEYS[N]:      idempotency key       (same hash tag -> same cluster slot)
+#
+# ARGV[1]: ttl_seconds
+# ARGV[2]: reservation_id (lock value)
+# ARGV[3]: seats_json
+# ARGV[4]: meta_json
 _LOCK_ALL_OR_NOTHING_LUA = r"""
 local ttl        = tonumber(ARGV[1])
-local val        = ARGV[2]
+local res_id     = ARGV[2]
 local seats_json = ARGV[3]
-local n_seats    = #KEYS - 1
+local meta_json  = ARGV[4]
 
--- If any seat lock key exists, fail immediately
+local seats_key  = KEYS[#KEYS - 2]
+local meta_key   = KEYS[#KEYS - 1]
+local idem_key   = KEYS[#KEYS]
+
+local n_seats = #KEYS - 3
+
+-- 0) Idempotency: if exists, return existing reservation id
+local existing = redis.call('GET', idem_key)
+if existing then
+  return {2, existing}
+end
+
+-- 1) If any seat lock key exists, fail immediately
 for i = 1, n_seats do
   if redis.call('EXISTS', KEYS[i]) == 1 then
     return {0, KEYS[i]}
   end
 end
 
--- Lock all seat keys
+-- 2) Lock all seat keys
 for i = 1, n_seats do
-  redis.call('SET', KEYS[i], val, 'EX', ttl, 'NX')
+  redis.call('SET', KEYS[i], res_id, 'EX', ttl, 'NX')
 end
 
--- Write reservation seats mapping with identical TTL so both expire at the same instant
-redis.call('SET', KEYS[#KEYS], seats_json, 'EX', ttl)
+-- 3) Write reservation seats mapping + meta with identical TTL
+redis.call('SET', seats_key, seats_json, 'EX', ttl)
+redis.call('SET', meta_key,  meta_json,  'EX', ttl)
+
+-- 4) Write idempotency key -> reservation id with identical TTL
+redis.call('SET', idem_key, res_id, 'EX', ttl)
 
 return {1, ''}
 """
+
 
 
 # ----------------------------
@@ -464,6 +489,18 @@ def handle_reserve(event, context):
     seats = body.get("seats") or []
     seat_ids = [s.get("seatId") for s in seats if isinstance(s, dict) and s.get("seatId")]
 
+
+    # Dedupe to avoid double-locking / double-charging if client sends duplicates
+    seat_ids = list(dict.fromkeys(seat_ids))  # preserves order
+
+    # Guardrail: cap seats per reservation
+    max_seats = _env_int("MAX_SEATS_PER_RESERVATION", 10)
+    if len(seat_ids) > max_seats:
+        return _resp(400, {
+            "error": "VALIDATION_ERROR",
+            "message": f"max {max_seats} seats allowed per reservation"
+        })
+    
     if not event_id or not category_id or not seat_ids:
         return _resp(400, {"error": "VALIDATION_ERROR", "message": "eventId, categoryId and seats[].seatId are required"})
 
@@ -535,6 +572,18 @@ def handle_reserve(event, context):
             "seats": {"requested": seat_ids, "locked": []}
         })
 
+    # 1b) Compute pricing NOW (payment is amount-only; confirmation must be able to validate amount)
+    # 1b) Compute pricing NOW (payment is amount-only _resp(500, {"error": "PRICING_LOOKUP_FAILED", "message": str(e)})
+
+    total_amount = unit_price * len(seat_ids)
+    
+    try:
+        unit_price, currency = _get_category_pricing(event_id, category_id)
+    except Exception as e:
+        logger.warning("Pricing lookup failed: %s", str(e))
+
+
+
     # 2) Atomic lock in cache (all-or-none) + write reservation seats mapping with identical TTL
     try:
         sl = _seatlock_cache()
@@ -543,43 +592,112 @@ def handle_reserve(event, context):
         return _resp(500, {"error": "SEAT_LOCK_CACHE_UNAVAILABLE", "message": str(e)})
 
     lock_keys = [_seat_lock_key(event_id, category_id, sid) for sid in seat_ids]
-    reservation_seats_key = _reservation_seats_key(event_id, category_id, reservation_id)
-    all_keys = lock_keys + [reservation_seats_key]
 
-    lock_value = reservation_id
-    seats_json = json.dumps(seat_ids)
+# Existing seats list key
+reservation_seats_key = _reservation_seats_key(event_id, category_id, reservation_id)
 
-    try:
-        ok, conflict_key = sl.eval(_LOCK_ALL_OR_NOTHING_LUA, len(all_keys), *all_keys, seat_lock_ttl, lock_value, seats_json)
-        ok = int(ok)
-        if ok != 1:
-            failure = f"Seat already locked: {conflict_key}"
-            try:
-                _insert_failed_reservation(reservation_id, user_sub, event_id, category_id, idempotency_key, failure)
-            except Exception:
-                logger.exception("Failed to write FAILED reservation record")
-            return _resp(409, {
-                "reservationId": reservation_id,
-                "status": "FAILED",
-                "eventId": event_id,
-                "categoryId": category_id,
-                "expiresAt": None,
-                "reason": "SEAT_ALREADY_LOCKED_CACHE",
-                "message": failure,
-                "seats": {"requested": seat_ids, "locked": []}
-            })
-    except Exception as e:
-        logger.exception("Seat lock Lua execution failed")
-        return _resp(500, {"error": "SEAT_LOCK_FAILED", "message": str(e)})
+# NEW: reservation meta key (pricing, expiry)
+reservation_meta_key = _reservation_meta_key(event_id, category_id, reservation_id)
 
-    # 3) Compute pricing
-    try:
-        unit_price, currency = _get_category_pricing(event_id, category_id)
-    except Exception as e:
-        unit_price, currency = 0, ""
-        logger.warning("Pricing lookup failed: %s", str(e))
+# NEW: idempotency mapping key (stable reservationId for retries)
+idem_key_header = h.get("idempotency-key")
+if not idem_key_header:
+    # If you want to make idempotency mandatory, change this to return 400.
+    idem_key_header = f"auto-{reservation_id}"
 
-    total_amount = unit_price * len(seat_ids)
+idem_key = _reserve_idempotency_key(event_id, category_id, user_sub, idem_key_header)
+
+# KEYS includes: seatlock keys + seats key + meta key + idempotency key
+all_keys = lock_keys + [reservation_seats_key, reservation_meta_key, idem_key]
+
+# Values
+lock_value = reservation_id
+seats_json = json.dumps(seat_ids)
+
+meta_json = json.dumps({
+    "reservationId": reservation_id,
+    "eventId": event_id,
+    "categoryId": category_id,
+    "currency": currency,
+    "unitPrice": unit_price,
+    "quantity": len(seat_ids),
+    "totalAmount": total_amount,
+    "expiresAt": expires_at
+})
+
+try:
+    rc, info = sl.eval(
+        _LOCK_ALL_OR_NOTHING_LUA,
+        len(all_keys),
+        *all_keys,
+        seat_lock_ttl,
+        lock_value,
+        seats_json,
+        meta_json
+    )
+    rc = int(rc)
+
+    if rc == 2:
+        # Idempotent replay: Lua returns existing reservationId in `info`
+        existing_res_id = str(info)
+
+        existing_seats_key = _reservation_seats_key(event_id, category_id, existing_res_id)
+        existing_meta_key  = _reservation_meta_key(event_id, category_id, existing_res_id)
+
+        existing_meta_raw = sl.get(existing_meta_key)
+        existing_seats_raw = sl.get(existing_seats_key)
+
+        if not existing_meta_raw or not existing_seats_raw:
+            # stale idempotency key; clear it and retry once
+            sl.delete(idem_key)
+            return handle_reserve(event, context)
+
+        meta = json.loads(existing_meta_raw)
+        locked_seats = json.loads(existing_seats_raw)
+
+        return _resp(200, {
+            "reservationId": existing_res_id,
+            "status": "SUCCESS",
+            "expiresAt": meta.get("expiresAt"),
+            "eventId": meta.get("eventId"),
+            "categoryId": meta.get("categoryId"),
+            "pricing": {
+                "currency": meta.get("currency"),
+                "unitPrice": meta.get("unitPrice"),
+                "quantity": meta.get("quantity"),
+                "totalAmount": meta.get("totalAmount")
+            },
+            "seats": {
+                "requested": seat_ids,
+                "locked": locked_seats
+            },
+            "nextActions": {
+                "canProceedToPayment": True,
+                "canCancel": True
+            }
+        })
+
+    if rc != 1:
+        failure = f"Seat already locked: {info}"
+        try:
+            _insert_failed_reservation(reservation_id, user_sub, event_id, category_id, idem_key_header, failure)
+        except Exception:
+            logger.exception("Failed to write FAILED reservation record")
+        return _resp(409, {
+            "reservationId": reservation_id,
+            "status": "FAILED",
+            "eventId": event_id,
+            "categoryId": category_id,
+            "expiresAt": None,
+            "reason": "SEAT_ALREADY_LOCKED_CACHE",
+            "message": failure,
+            "seats": {"requested": seat_ids, "locked": []}
+        })
+
+except Exception as e:
+    logger.exception("Seat lock Lua execution failed")
+    return _resp(500, {"error": "SEAT_LOCK_FAILED", "message": str(e)})
+
 
     return _resp(200, {
         "reservationId": reservation_id,
