@@ -47,16 +47,34 @@ jobs:
 
             - name: terraform-plan
               id: plan
-              run: terraform plan
+              run: |
+                set -o pipefail
+                terraform plan -no-color -out=tfplan 2>&1 | tee tfplan.log
+               
+            - name: print-log-lines
+              id: print
+              if: always()
+              run: |
+                  echo "==== LAST 200 LINES OF tfplan.log ===="
+                  tail -n 200 tfplan.log
+            
+            - name: upload-logs
+              id: logs-artifact
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                name: tfplan-log
+                path: tfplan.log
 
+              
 
             - name: terraform-plan-show
               if: always()
-              run: |
-                  terraform show tfplan > tfplan.txt
+              run: terraform show tfplan > tfplan.txt
 
 
             - name: upload-tfplan-artifact
+              if: always()
               uses: actions/upload-artifact@v4
               with:
                 name: teraform-plan-artifact
