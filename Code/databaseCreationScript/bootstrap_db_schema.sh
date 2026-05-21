@@ -117,6 +117,39 @@ CREATE TABLE IF NOT EXISTS events (
 ALTER TABLE events ADD COLUMN IF NOT EXISTS event_type TEXT;
 
 -- =====================================
+-- 5b) RESERVATIONS + RESERVATION_SEATS  (MISSING IN YOUR SCRIPT)
+-- =====================================
+CREATE TABLE IF NOT EXISTS public.reservations (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id          TEXT NOT NULL,   -- Cognito sub
+  event_id         UUID NOT NULL REFERENCES public.events(id),
+  category_id      UUID NOT NULL REFERENCES public.event_categories(id),
+  status           reservation_status NOT NULL DEFAULT 'HOLD',
+  idempotency_key  TEXT,
+  expires_at       TIMESTAMPTZ,
+  failure_reason   TEXT,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, event_id, idempotency_key)
+);
+
+CREATE TABLE IF NOT EXISTS public.reservation_seats (
+  reservation_id UUID NOT NULL REFERENCES public.reservations(id) ON DELETE CASCADE,
+  event_id       UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
+  seat_id        UUID NOT NULL REFERENCES public.seats(id),
+  status         reservation_status NOT NULL DEFAULT 'HOLD',
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (reservation_id, seat_id)
+);
+
+-- Correctness: only one active HOLD/CONFIRMED per seat
+CREATE UNIQUE INDEX IF NOT EXISTS uq_active_reservation_per_seat
+  ON public.reservation_seats(seat_id)
+  WHERE status IN ('HOLD', 'CONFIRMED');
+
+
+-- =====================================
 -- 4) CATEGORIES + SEATS
 -- =====================================
 CREATE TABLE IF NOT EXISTS event_categories (
