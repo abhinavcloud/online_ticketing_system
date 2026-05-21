@@ -46,11 +46,14 @@ jobs:
                   terraform init -backend-config=backend.hcl
 
             - name: terraform-plan
-              run: terraform plan -out=tfplan
+              id: plan
+              run: terraform plan
+
 
             - name: terraform-plan-show
+              if: steps.plan.outcome == 'success' || steps.plan.outcome == 'failure'
               run: |
-                    terraform show tfplan > tfplan.txt
+                  terraform show tfplan > tfplan.txt
 
 
             - name: upload-tfplan-artifact
