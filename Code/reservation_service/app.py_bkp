@@ -105,6 +105,10 @@ def _b64url_decode(s: str) -> bytes:
     return base64.urlsafe_b64decode(s + pad)
 
 
+def _now_iso() -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%S%z")
+
+
 # ----------------------------
 # Booking token verification (KMS Verify)
 # ----------------------------
@@ -152,7 +156,7 @@ def _elasticache_iam_token(user_id: str, cache_name: str, region: str) -> str:
     """SigV4 presigned URL used as password for ElastiCache Serverless IAM auth (TLS required)."""
     cache_name = cache_name.lower()
     url = f"http://{cache_name}/"
-    params = {"Action": "connect", "User": user_id, "ResourceType": "ServerlessCache"}
+    params = {"Action": "connect", "User": user_id, \"ResourceType\": "ServerlessCache"}
 
     aws_req = AWSRequest(method="GET", url=url, params=params)
     sess = Session()
@@ -180,7 +184,7 @@ def _queue_cache():
     port = int(_env_str("QUEUE_CACHE_PORT", "ACTIVE_USERS_CACHE_PORT") or "6379")
     cache_name = _env_str("QUEUE_CACHE_NAME", "ACTIVE_USERS_CACHE_NAME", required=True)
     user_id = _env_str("QUEUE_ELASTICACHE_USER_ID", "ELASTICACHE_USER_ID", required=True)
-    region = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION")
+    region = os.environ.get("APP_REGION") or os.environ.get("AWS_DEFAULT_REGION")
 
     now = time.time()
     if _QUEUE_REDIS is not None and now < _QUEUE_REDIS_REFRESH_AT:
@@ -217,7 +221,7 @@ def _seatlock_cache():
     port = int(_env_str("SEAT_LOCK_CACHE_PORT") or "6379")
     cache_name = _env_str("SEAT_LOCK_CACHE_NAME", required=True)
     user_id = _env_str("SEAT_LOCK_ELASTICACHE_USER_ID", "ELASTICACHE_USER_ID", required=True)
-    region = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION")
+    region = os.environ.get("APP_REGION") or os.environ.get("AWS_DEFAULT_REGION")
 
     now = time.time()
     if _SEATLOCK_REDIS is not None and now < _SEATLOCK_REDIS_REFRESH_AT:
@@ -278,7 +282,7 @@ def _db_conn():
     db_port = int(os.environ.get("DB_PORT", "5432"))
     db_name = os.environ["DB_NAME"]
     db_user = os.environ["DB_USER"]
-    db_region = os.environ.get("DB_REGION") or os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION")
+    db_region = os.environ.get("DB_REGION") or os.environ.get("APP_REGION") or os.environ.get("AWS_DEFAULT_REGION")
     sslmode = os.environ.get("DB_SSLMODE", "require")
 
     token = _rds_iam_token(host=db_host, port=db_port, user=db_user, region=db_region)
@@ -318,40 +322,25 @@ def _seat_lock_key(event_id: str, category_id: str, seat_id: str) -> str:
     return f"seatlock:{tag}:{seat_id}"
 
 
-def _reservation_seats_key(event_id: str, category_id: str, reservation_id: str) -> str:
-    tag = _tag(event_id, category_id)
-    return f"reservation:{tag}:{reservation_id}:seats"
-
-
 # ----------------------------
 # DB functions
 # ----------------------------
 
 def _get_category_pricing(event_id: str, category_id: str) -> Tuple[int, str]:
     """Returns (unit_price, currency) from public.event_categories."""
-    global _DB_CONN, _DB_CONN_REFRESH_AT
-
     sql = """
         SELECT price, currency
         FROM public.event_categories
         WHERE event_id = %s AND id = %s
         LIMIT 1
     """
-    for attempt in range(2):
-        try:
-            conn = _db_conn()
-            with conn.cursor() as cur:
-                cur.execute(sql, (event_id, category_id))
-                row = cur.fetchone()
-            if not row:
-                raise ValueError("Invalid category for event")
-            return int(row[0]), str(row[1])
-        except psycopg2.OperationalError:
-            if attempt == 0:
-                _DB_CONN = None
-                _DB_CONN_REFRESH_AT = 0.0
-            else:
-                raise
+    conn = _db_conn()
+    with conn.cursor() as cur:
+        cur.execute(sql, (event_id, category_id))
+        row = cur.fetchone()
+    if not row:
+        raise ValueError("Invalid category for event")
+    return int(row[0]), str(row[1])
 
 
 def _validate_seats_available(event_id: str, category_id: str, seat_ids: List[str]) -> Dict[str, str]:
@@ -362,8 +351,6 @@ def _validate_seats_available(event_id: str, category_id: str, seat_ids: List[st
     Assumes schema: public.seats(id UUID, event_id UUID, category_id UUID, seat_label TEXT, status TEXT/enum)
     and seat_label is the API seatId.
     """
-    global _DB_CONN, _DB_CONN_REFRESH_AT
-
     if not seat_ids:
         raise ValueError("No seats requested")
 
@@ -376,23 +363,16 @@ def _validate_seats_available(event_id: str, category_id: str, seat_ids: List[st
           AND seat_label = ANY(%s)
     """
 
-    for attempt in range(2):
-        try:
-            conn = _db_conn()
-            with conn.cursor() as cur:
-                cur.execute(sql, (event_id, category_id, seat_ids))
-                rows = cur.fetchall()
-            found = {r[1]: str(r[0]) for r in rows}
-            missing = [s for s in seat_ids if s not in found]
-            if missing:
-                raise ValueError(f"Some seats are not AVAILABLE in DB: {missing}")
-            return found
-        except psycopg2.OperationalError:
-            if attempt == 0:
-                _DB_CONN = None
-                _DB_CONN_REFRESH_AT = 0.0
-            else:
-                raise
+    conn = _db_conn()
+    with conn.cursor() as cur:
+        cur.execute(sql, (event_id, category_id, seat_ids))
+        rows = cur.fetchall()
+
+    found = {r[1]: str(r[0]) for r in rows}
+    missing = [s for s in seat_ids if s not in found]
+    if missing:
+        raise ValueError(f"Some seats are not AVAILABLE in DB: {missing}")
+    return found
 
 
 def _insert_failed_reservation(reservation_id: str, user_sub: str, event_id: str, category_id: str,
@@ -410,38 +390,73 @@ def _insert_failed_reservation(reservation_id: str, user_sub: str, event_id: str
         )
 
 
+def _insert_hold_reservation(reservation_id: str, user_sub: str, event_id: str, category_id: str,
+                            idempotency_key: Optional[str], expires_at: str,
+                            seat_uuid_map: Dict[str, str]) -> None:
+    """Insert reservation + reservation_seats rows with HOLD status (all-or-none)."""
+    conn = _db_conn()
+    with conn.cursor() as cur:
+        cur.execute("BEGIN;")
+        try:
+            cur.execute(
+                """
+                INSERT INTO public.reservations (id, user_id, event_id, category_id, status, idempotency_key, expires_at, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, 'HOLD', %s, %s::timestamptz, now(), now())
+                """,
+                (reservation_id, user_sub, event_id, category_id, idempotency_key, expires_at),
+            )
+
+            # Insert each seat under this reservation
+            # reservation_seats references public.seats(id)
+            for seat_label, seat_uuid in seat_uuid_map.items():
+                cur.execute(
+                    """
+                    INSERT INTO public.reservation_seats (reservation_id, event_id, seat_id, status, created_at, updated_at)
+                    VALUES (%s, %s, %s, 'HOLD', now(), now())
+                    """,
+                    (reservation_id, event_id, seat_uuid),
+                )
+
+            cur.execute("COMMIT;")
+        except Exception:
+            cur.execute("ROLLBACK;")
+            raise
+
+
 # ----------------------------
 # Valkey Lua for atomic multi-seat lock (all-or-none)
-# KEYS[1..N-1]: seat lock keys
-# KEYS[N]:      reservation seats key (same hash tag -> same cluster slot)
-# ARGV[1]:      ttl_seconds
-# ARGV[2]:      lock value (reservation_id)
-# ARGV[3]:      seats JSON (stored under reservation key with identical TTL)
 # ----------------------------
 
 _LOCK_ALL_OR_NOTHING_LUA = r"""
-local ttl        = tonumber(ARGV[1])
-local val        = ARGV[2]
-local seats_json = ARGV[3]
-local n_seats    = #KEYS - 1
+-- KEYS: one key per seat lock
+-- ARGV[1] = ttl_seconds
+-- ARGV[2] = value to store
+local ttl = tonumber(ARGV[1])
+local val = ARGV[2]
 
--- If any seat lock key exists, fail immediately
-for i = 1, n_seats do
+-- If any key exists, fail
+for i=1,#KEYS do
   if redis.call('EXISTS', KEYS[i]) == 1 then
     return {0, KEYS[i]}
   end
 end
 
--- Lock all seat keys
-for i = 1, n_seats do
+-- Set all keys
+for i=1,#KEYS do
   redis.call('SET', KEYS[i], val, 'EX', ttl, 'NX')
 end
 
--- Write reservation seats mapping with identical TTL so both expire at the same instant
-redis.call('SET', KEYS[#KEYS], seats_json, 'EX', ttl)
-
 return {1, ''}
 """
+
+
+def _delete_locks_best_effort(sl, keys: List[str]):
+    if not keys:
+        return
+    try:
+        sl.delete(*keys)
+    except Exception:
+        logger.exception("Failed to delete seat locks (best-effort)")
 
 
 # ----------------------------
@@ -495,9 +510,6 @@ def handle_reserve(event, context):
     if not session_id:
         return _resp(401, {"error": "INVALID_BOOKING_TOKEN", "message": "sessionId missing"})
 
-    if bt.get("scope") != "booking:queue":
-        return _resp(401, {"error": "INVALID_BOOKING_TOKEN", "message": "invalid token scope"})
-
     # Re-check session is ALLOWED in queue cache
     try:
         q = _queue_cache()
@@ -511,15 +523,16 @@ def handle_reserve(event, context):
     # Determine TTL for locks/reservation
     seat_lock_ttl = _env_int("SEAT_LOCK_TTL_SECONDS", 600)
     expires_at_epoch = int(time.time()) + seat_lock_ttl
-    expires_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(expires_at_epoch))
+    expires_at = time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(expires_at_epoch))
 
     # Create deterministic reservation_id for this request (always)
     reservation_id = str(uuid.uuid4())
 
-    # 1) Validate seats are AVAILABLE in DB
+    # 1) Validate seats are AVAILABLE in DB (and map to seat UUIDs)
     try:
-        _validate_seats_available(event_id, category_id, seat_ids)
+        seat_uuid_map = _validate_seats_available(event_id, category_id, seat_ids)
     except Exception as e:
+        # Create FAILED reservation record and return
         try:
             _insert_failed_reservation(reservation_id, user_sub, event_id, category_id, idempotency_key, str(e))
         except Exception:
@@ -535,24 +548,24 @@ def handle_reserve(event, context):
             "seats": {"requested": seat_ids, "locked": []}
         })
 
-    # 2) Atomic lock in cache (all-or-none) + write reservation seats mapping with identical TTL
+    # 2) Atomic lock in cache (all-or-none)
     try:
         sl = _seatlock_cache()
     except Exception as e:
         logger.exception("Seat-lock cache unavailable")
         return _resp(500, {"error": "SEAT_LOCK_CACHE_UNAVAILABLE", "message": str(e)})
 
+    # Keys are hash-tagged to avoid CROSSSLOT in Valkey cluster
     lock_keys = [_seat_lock_key(event_id, category_id, sid) for sid in seat_ids]
-    reservation_seats_key = _reservation_seats_key(event_id, category_id, reservation_id)
-    all_keys = lock_keys + [reservation_seats_key]
 
+    # value stored in cache: reservation_id (useful for debug / later release)
     lock_value = reservation_id
-    seats_json = json.dumps(seat_ids)
 
     try:
-        ok, conflict_key = sl.eval(_LOCK_ALL_OR_NOTHING_LUA, len(all_keys), *all_keys, seat_lock_ttl, lock_value, seats_json)
+        ok, conflict_key = sl.eval(_LOCK_ALL_OR_NOTHING_LUA, len(lock_keys), *lock_keys, seat_lock_ttl, lock_value)
         ok = int(ok)
         if ok != 1:
+            # This means at least one seat was already locked.
             failure = f"Seat already locked: {conflict_key}"
             try:
                 _insert_failed_reservation(reservation_id, user_sub, event_id, category_id, idempotency_key, failure)
@@ -572,10 +585,33 @@ def handle_reserve(event, context):
         logger.exception("Seat lock Lua execution failed")
         return _resp(500, {"error": "SEAT_LOCK_FAILED", "message": str(e)})
 
-    # 3) Compute pricing
+    # 3) Create reservation record in DB (HOLD) + reservation_seats
+    try:
+        _insert_hold_reservation(reservation_id, user_sub, event_id, category_id, idempotency_key, expires_at, seat_uuid_map)
+    except Exception as e:
+        # DB write failed after we acquired locks -> release locks and write FAILED reservation
+        _delete_locks_best_effort(sl, lock_keys)
+        try:
+            _insert_failed_reservation(reservation_id, user_sub, event_id, category_id, idempotency_key, f"DB_INSERT_FAILED: {e}")
+        except Exception:
+            logger.exception("Failed to write FAILED reservation record")
+
+        return _resp(500, {
+            "reservationId": reservation_id,
+            "status": "FAILED",
+            "eventId": event_id,
+            "categoryId": category_id,
+            "expiresAt": None,
+            "reason": "DB_INSERT_FAILED",
+            "message": str(e),
+            "seats": {"requested": seat_ids, "locked": []}
+        })
+
+    # 4) Compute pricing
     try:
         unit_price, currency = _get_category_pricing(event_id, category_id)
     except Exception as e:
+        # Pricing failure should not invalidate seat locks. Still return reservation success with minimal pricing.
         unit_price, currency = 0, ""
         logger.warning("Pricing lookup failed: %s", str(e))
 
