@@ -399,7 +399,7 @@ data "archive_file" "seat_availability_lambda_zip" {
 data "archive_file" "seat_availability_layer_zip" {
   type        = "zip"
   source_dir  = "${path.module}/../../Code/seat_availibility_service_layer"
-  output_path = "${path.module}/artifacts/sseat_availibility_service_layer.zip"
+  output_path = "${path.module}/artifacts/seat_availibility_service_layer.zip"
 }
 
 resource "aws_lambda_layer_version" "seat_availability_deps" {
