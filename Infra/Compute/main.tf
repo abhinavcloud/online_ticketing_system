@@ -572,4 +572,48 @@ resource "aws_lambda_function" "reservation_service" {
 }
 
 
-# Create a Lambda with IAM Role and Security Group (Booking Service)
+# Create a Lambda with IAM Role and Security Group (Mock Payment Service)
+data "archive_file" "payment_lambda_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/../../Code/payment_service"
+  output_path = "${path.module}/artifacts/payment_service.zip"
+}
+
+
+
+resource "aws_lambda_function" "payment_service" {
+  function_name = "payment-service"
+  description   = "payment Service: https://payment-gateway.com/pay?amount=9000&currency=INR&reference=res_123&returnUrl=https://your-frontend.com/payment/return?reservationId=res_123"
+  runtime       = "python3.12"
+  handler       = "app.handler"
+  timeout       = 30
+  memory_size   = 512
+
+  filename         = data.archive_file.payment_lambda_zip.output_path
+  source_code_hash = data.archive_file.payment_lambda_zip.output_base64sha256
+
+  role = aws_iam_role.lambda_role_ticket_system.arn # Reusing the same role, but we can also strip down and create specific role for this mock service 
+
+  # Layers is not needed for mock
+  #layers = [
+  #  aws_lambda_layer_version.reservation_deps.arn
+  #]
+
+  vpc_config {
+    subnet_ids         = var.subnet_group
+    security_group_ids = [var.security_group_id]
+  }
+
+  environment {
+    variables = {
+      # Use APP_REGION (do NOT set AWS_REGION - it's reserved by Lambda)
+      PAYMENT_MOCK_MODE = "always_success" # Other values include "random", "always_failure"
+      PAYMENT_MOCK_FAILURE_RATE = "0.1" # Percentage of falires if payment mock mode is random
+    }
+  }
+
+  tags = {
+    Service = "ticketing"
+    Name    = "reservation-service"
+  }
+}
