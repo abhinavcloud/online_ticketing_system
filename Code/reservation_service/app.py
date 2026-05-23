@@ -140,6 +140,10 @@ def _verify_booking_token(token: str) -> Dict[str, Any]:
         Signature=signature,
         SigningAlgorithm="RSASSA_PKCS1_V1_5_SHA_256",
     )
+    
+    if not verify_resp.get("SignatureValid"):
+        raise ValueError("Invalid signature")
+
 
     return payload
 
@@ -560,10 +564,14 @@ def handle_reserve(event, context):
     # Create deterministic reservation_id for this request (always)
     reservation_id = str(uuid.uuid4())
 
-    # Capture idempotency key; auto-generate if client did not supply one
+    # Idempotency key is required to make reserveTicket retry-safe
     idem_key_header = h.get("idempotency-key")
     if not idem_key_header:
-        idem_key_header = f"auto-{reservation_id}"
+            return _resp(400, {
+                "error": "MISSING_IDEMPOTENCY_KEY",
+                "message": "Idempotency-Key header is required"
+            })
+
 
     # 1) Validate seats are AVAILABLE in DB
     try:
@@ -589,8 +597,12 @@ def handle_reserve(event, context):
         unit_price, currency = _get_category_pricing(event_id, category_id)
     except Exception as e:
         unit_price, currency = 0, ""
-        logger.warning("Pricing lookup failed: %s", str(e))
-
+        logger.exception("Pricing lookup failed")
+                return _resp(500, {
+                    "error": "PRICING_LOOKUP_FAILED",
+                    "message": str(e)
+                    }
+                )
     total_amount = unit_price * len(seat_ids)
 
     # 2) Atomic lock in cache (all-or-none) + write reservation seats mapping with identical TTL
@@ -706,18 +718,32 @@ def handle_reserve(event, context):
         logger.exception("Seat lock Lua execution failed")
         return _resp(500, {"error": "SEAT_LOCK_FAILED", "message": str(e)})
 
-    # Write lookup key so booking service can resolve eventId/categoryId from
-    # reservationId alone. Written outside Lua because reservation:lookup:{id}
-    # lands on a different cluster slot from the seat lock keys (CROSSSLOT).
+    # Write lookup key so booking service can resolve eventId/categoryId from reservationId alone.
+    # This is REQUIRED because confirmation depends on it.
     try:
         sl.setex(
             _reservation_lookup_key(reservation_id),
             seat_lock_ttl,
             json.dumps({"eventId": event_id, "categoryId": category_id}),
         )
-    except Exception:
-        logger.exception("Failed to write reservation lookup key (non-fatal)")
+    except Exception as e:
+        logger.exception("Failed to write reservation lookup key (fatal)")
 
+        # Cleanup everything written in cache for this reservation
+        try:
+            sl.delete(
+                *lock_keys,
+                reservation_seats_key,
+                reservation_meta_key,
+                idem_key
+            )
+        except Exception:
+            logger.exception("Failed to clean up reservation cache keys after lookup-key failure")
+
+        return _resp(500, {
+            "error": "RESERVATION_LOOKUP_WRITE_FAILED",
+            "message": str(e)
+        })
     return _resp(200, {
         "reservationId": reservation_id,
         "status": "SUCCESS",
