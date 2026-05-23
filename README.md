@@ -1,36 +1,5 @@
 # Online Ticket System
 
-## Contents
-## Table of Contents
-
-## Table of Contents
-
-- #overview
-- #problem-statement
-- #objectives
-- #functional-scope
-- #non-functional-design-principles
-- #high-level-architecture
-- #service-architecture
-- #consistency-model
-- #cache-key-design
-- #data-model
-- #end-to-end-flow
-- #api-surface
-- #booking-token
-- #reservation-contract
-- #payment-contract
-- #booking-confirmation-contract
-- #failure-handling
-- #security-model
-- #infrastructure-layout
-- #database-bootstrap
-- #deployment-process
-- #local-development-notes
-- #known-design-choices
-- #operational-notes
-- #future-improvements
-- #conclusion
 
 ## Overview
 
