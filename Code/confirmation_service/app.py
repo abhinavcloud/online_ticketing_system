@@ -127,6 +127,11 @@
             SigningAlgorithm="RSASSA_PKCS1_V1_5_SHA_256",
         )
 
+        
+        if not verify_resp.get("SignatureValid"):
+            raise ValueError("Invalid signature")
+
+
         return payload
 
 
@@ -282,10 +287,15 @@
 
     _CHECK_ALL_LOCKS_LUA = r"""
     for i = 1, #KEYS do
-    if redis.call('EXISTS', KEYS[i]) == 0 then
-        return {0, KEYS[i]}
+        local v = redis.call('GET', KEYS[i])
+        if not v then
+            return {0, KEYS[i]}
+        end
+        if v ~= expected then
+            return {0, KEYS[i]}
+        end
     end
-    end
+    
     return {1, ''}
     """
 
@@ -528,11 +538,31 @@
 
         reservation_id = body.get("reservationId")
         payment_id = body.get("paymentId")
+        payment_status = body.get("paymentStatus")
+        paid_at = body.get("paidAt")
+        amount = body.get("amount")
 
-        if not reservation_id or not payment_id:
+        if not reservation_id or not payment_id or not payment_status:
             return _resp(400, {
                 "error": "VALIDATION_ERROR",
-                "message": "reservationId and paymentId are required"
+                "message": "reservationId, paymentId and paymentStatus are required"
+            })
+
+        if payment_status != "SUCCESS":
+            return _resp(402, {
+                "reservationId": reservation_id,
+                "status": "FAILED",
+                "reason": "PAYMENT_NOT_SUCCESS",
+                "message": "Payment was not successful"
+            })
+
+        if amount is not None:
+            try:
+                amount = int(amount)
+            except (TypeError, ValueError):
+                return _resp(400, {
+                    "error": "VALIDATION_ERROR",
+                    "message": "amount must be an integer if provided"
             })
 
         # Verify booking token
@@ -616,13 +646,22 @@
         seat_ids = json.loads(seats_raw)
         meta = json.loads(meta_raw)
         total_amount = int(meta.get("totalAmount", 0))
+        
+        if amount is not None and amount != total_amount:
+            return _resp(409, {
+                "reservationId": reservation_id,
+                "status": "FAILED",
+                "reason": "AMOUNT_MISMATCH",
+                "message": f"Amount mismatch. Expected {total_amount}, got {amount}"
+            })
+
 
         # Build seat lock keys
         lock_keys = [_seat_lock_key(event_id, category_id, sid) for sid in seat_ids]
 
         # Check all seat locks still exist in cache (atomic Lua)
         try:
-            ok, missing_key = sl.eval(_CHECK_ALL_LOCKS_LUA, len(lock_keys), *lock_keys)
+            ok, missing_key = sl.eval(_CHECK_ALL_LOCKS_LUA, len(lock_keys), *lock_keys, reservation_id )
             ok = int(ok)
         except Exception as e:
             logger.exception("Seat lock check Lua failed")
@@ -645,7 +684,7 @@
                 "reservationId": reservation_id,
                 "status": "FAILED",
                 "reason": "SEAT_LOCK_EXPIRED",
-                "message": f"Seat lock expired for: {missing_key}. All locks released. Payment refund is not handled by this service."
+                "message": f"eat lock invalid or expired for key: {missing_key}. Payment refund will be handled seperately."
             })
 
         # Validate seats are still AVAILABLE in DB
@@ -728,7 +767,12 @@
         # Booking confirmed — release seat locks and lookup key from cache
         _delete_locks_best_effort(sl, lock_keys)
         try:
-            sl.delete(_reservation_lookup_key(reservation_id))
+            sl.delete(
+                _reservation_lookup_key(reservation_id),
+                seats_key,
+                meta_key
+            )
+
         except Exception:
             logger.exception("Failed to delete reservation lookup key (best-effort)")
 
