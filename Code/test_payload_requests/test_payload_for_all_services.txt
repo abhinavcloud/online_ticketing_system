@@ -1,0 +1,750 @@
+# 1) Small verification SQL pack
+
+Run these in `psql` after bootstrap to confirm the schema and seed are aligned with the finalized services.
+
+***
+
+## 1.1 Verify all required tables exist
+
+```sql
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
+  AND table_name IN (
+    'locations',
+    'venues',
+    'performers',
+    'events',
+    'event_performers',
+    'event_categories',
+    'seats',
+    'reservations',
+    'reservation_seats',
+    'tickets'
+  )
+ORDER BY table_name;
+```
+
+### Expected
+
+You should see all 10 tables listed.
+
+***
+
+## 1.2 Verify critical columns used by finalized services
+
+```sql
+SELECT table_name, column_name, data_type
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND (
+    (table_name = 'venues' AND column_name IN ('id','location_id','name','address'))
+    OR
+    (table_name = 'events' AND column_name IN ('id','name','description','venue_id','event_date','event_time','event_type','status'))
+    OR
+    (table_name = 'event_categories' AND column_name IN ('id','event_id','name','price','currency'))
+    OR
+    (table_name = 'seats' AND column_name IN ('id','event_id','category_id','seat_label','status','updated_at','booked_at'))
+    OR
+    (table_name = 'reservations' AND column_name IN ('id','user_id','event_id','category_id','status','idempotency_key','expires_at','failure_reason'))
+    OR
+    (table_name = 'reservation_seats' AND column_name IN ('reservation_id','event_id','seat_id','status'))
+    OR
+    (table_name = 'tickets' AND column_name IN (
+      'id','user_id','reservation_id','payment_id','event_id','category_id',
+      'venue_id','seat_label','unit_price','total_amount','currency',
+      'event_name','event_date','event_time','venue_name','venue_address',
+      'category_name','status'
+    ))
+  )
+ORDER BY table_name, column_name;
+```
+
+***
+
+## 1.3 Verify category pricing + currency exist
+
+```sql
+SELECT id, event_id, name, price, currency
+FROM public.event_categories
+ORDER BY name;
+```
+
+### Expected
+
+Rows like:
+
+* VIP / 3000 / INR
+* General / 500 / INR
+
+***
+
+## 1.4 Verify seat inventory exists and status defaults are correct
+
+```sql
+SELECT category_id, status, COUNT(*) AS seat_count
+FROM public.seats
+GROUP BY category_id, status
+ORDER BY category_id, status;
+```
+
+### Expected
+
+You should see seats under each category with `status = AVAILABLE`.
+
+***
+
+## 1.5 Verify event + venue + category join (used by booking confirmation)
+
+```sql
+SELECT
+  e.id AS event_id,
+  e.name AS event_name,
+  e.event_date,
+  e.event_time,
+  e.event_type,
+  v.id AS venue_id,
+  v.name AS venue_name,
+  v.address AS venue_address,
+  ec.id AS category_id,
+  ec.name AS category_name,
+  ec.price,
+  ec.currency
+FROM public.events e
+JOIN public.venues v ON v.id = e.venue_id
+JOIN public.event_categories ec ON ec.event_id = e.id
+ORDER BY e.name, ec.name;
+```
+
+### Expected
+
+One row per event-category combination.
+
+***
+
+## 1.6 Verify performer mapping (used by browse `/performers` and `/events`)
+
+```sql
+SELECT
+  e.name AS event_name,
+  p.name AS performer_name
+FROM public.event_performers ep
+JOIN public.events e ON e.id = ep.event_id
+JOIN public.performers p ON p.id = ep.performer_id
+ORDER BY e.name, p.name;
+```
+
+***
+
+## 1.7 Verify tickets table is empty before booking
+
+```sql
+SELECT COUNT(*) AS ticket_count
+FROM public.tickets;
+```
+
+### Expected
+
+Initially `0`.
+
+***
+
+## 1.8 Verify reservations audit table (FAILED rows only in current design)
+
+```sql
+SELECT id, user_id, event_id, category_id, status, idempotency_key, failure_reason, created_at
+FROM public.reservations
+ORDER BY created_at DESC
+LIMIT 20;
+```
+
+### Expected
+
+Initially empty unless you already had failed reservation attempts.
+
+***
+
+## 1.9 Verify there are real IDs you can use in test payloads
+
+```sql
+SELECT id AS event_id, name AS event_name FROM public.events LIMIT 5;
+
+SELECT id AS category_id, event_id, name AS category_name
+FROM public.event_categories
+LIMIT 10;
+
+SELECT seat_label
+FROM public.seats
+WHERE status = 'AVAILABLE'
+LIMIT 10;
+```
+
+Use these values in the sample requests below.
+
+***
+
+# 2) Sample request / response for each service
+
+I’ll give you:
+
+* **request payload**
+* **expected response shape**
+
+These are aligned with the services you finalized.
+
+***
+
+# 2.1 Browse Service
+
+***
+
+## A) `GET /v1/location`
+
+### Request (Lambda console REST-style)
+
+```json
+{
+  "resource": "/v1/location",
+  "path": "/v1/location",
+  "httpMethod": "GET",
+  "queryStringParameters": {
+    "page": "1",
+    "pageSize": "10"
+  },
+  "requestContext": {}
+}
+```
+
+### Sample response
+
+```json
+{
+  "page": 1,
+  "pageSize": 10,
+  "total": 1,
+  "locations": [
+    {
+      "locationId": "LOCATION_UUID",
+      "locationName": "Pune"
+    }
+  ]
+}
+```
+
+***
+
+## B) `GET /v1/venue?location=<locationId>`
+
+### Request
+
+```json
+{
+  "resource": "/v1/venue",
+  "path": "/v1/venue",
+  "httpMethod": "GET",
+  "queryStringParameters": {
+    "location": "LOCATION_UUID",
+    "page": "1",
+    "pageSize": "10"
+  },
+  "requestContext": {}
+}
+```
+
+### Sample response
+
+```json
+{
+  "page": 1,
+  "pageSize": 10,
+  "total": 1,
+  "venues": [
+    {
+      "venueId": "VENUE_UUID",
+      "venueName": "Big Arena"
+    }
+  ]
+}
+```
+
+***
+
+## C) `GET /v1/performers?location=<locationId>`
+
+### Request
+
+```json
+{
+  "resource": "/v1/performers",
+  "path": "/v1/performers",
+  "httpMethod": "GET",
+  "queryStringParameters": {
+    "location": "LOCATION_UUID",
+    "page": "1",
+    "pageSize": "10"
+  },
+  "requestContext": {}
+}
+```
+
+### Sample response
+
+```json
+{
+  "page": 1,
+  "pageSize": 10,
+  "total": 1,
+  "performers": [
+    {
+      "performerId": "PERFORMER_UUID",
+      "performerName": "Demo Performer"
+    }
+  ]
+}
+```
+
+***
+
+## D) `GET /v1/events?location=<locationId>`
+
+### Request
+
+```json
+{
+  "resource": "/v1/events",
+  "path": "/v1/events",
+  "httpMethod": "GET",
+  "queryStringParameters": {
+    "location": "LOCATION_UUID",
+    "page": "1",
+    "pageSize": "20"
+  },
+  "requestContext": {}
+}
+```
+
+### Sample response
+
+```json
+{
+  "page": 1,
+  "pageSize": 20,
+  "total": 1,
+  "events": [
+    {
+      "eventId": "EVENT_UUID",
+      "eventName": "Demo Event",
+      "dateTime": "2026-05-30T19:30:00+05:30",
+      "category": "Concert",
+      "location": {
+        "locationId": "LOCATION_UUID",
+        "locationName": "Pune"
+      },
+      "venue": {
+        "venueId": "VENUE_UUID",
+        "venueName": "Big Arena"
+      },
+      "performers": [
+        {
+          "performerId": "PERFORMER_UUID",
+          "performerName": "Demo Performer"
+        }
+      ]
+    }
+  ]
+}
+```
+
+***
+
+## E) `GET /v1/event/{eventId}`
+
+### Request
+
+```json
+{
+  "resource": "/v1/event/{eventId}",
+  "path": "/v1/event/EVENT_UUID",
+  "httpMethod": "GET",
+  "pathParameters": {
+    "eventId": "EVENT_UUID"
+  },
+  "requestContext": {}
+}
+```
+
+### Sample response
+
+```json
+{
+  "eventId": "EVENT_UUID",
+  "eventName": "Demo Event",
+  "eventDescription": "Sample seeded event",
+  "dateTime": "2026-05-30T19:30:00+05:30",
+  "status": "ON_SALE",
+  "location": {
+    "locationId": "LOCATION_UUID",
+    "locationName": "Pune"
+  },
+  "venue": {
+    "venueId": "VENUE_UUID",
+    "venueName": "Big Arena"
+  },
+  "performers": [
+    {
+      "performerId": "PERFORMER_UUID",
+      "performerName": "Demo Performer"
+    }
+  ],
+  "ticketCategories": [
+    {
+      "categoryId": "CATEGORY_UUID_VIP",
+      "categoryName": "VIP",
+      "price": 3000,
+      "currency": "INR",
+      "totalTickets": 40,
+      "availableTickets": 40,
+      "status": "AVAILABLE"
+    }
+  ]
+}
+```
+
+***
+
+# 2.2 Queue Service
+
+***
+
+## `POST /queue/enter`
+
+### Request
+
+```json
+{
+  "resource": "/queue/enter",
+  "path": "/queue/enter",
+  "httpMethod": "POST",
+  "headers": {
+    "content-type": "application/json"
+  },
+  "requestContext": {
+    "authorizer": {
+      "claims": {
+        "sub": "test-sub-123"
+      }
+    }
+  },
+  "body": "{\"eventId\":\"EVENT_UUID\",\"categoryId\":\"CATEGORY_UUID_VIP\"}",
+  "isBase64Encoded": false
+}
+```
+
+### Sample response (ALLOWED)
+
+```json
+{
+  "status": "ALLOWED",
+  "bookingToken": "JWT_TOKEN_HERE",
+  "sessionId": "SESSION_UUID",
+  "expiresInSeconds": 600,
+  "pollAfterSeconds": 5,
+  "message": "You are allowed to proceed. Fetch available seats."
+}
+```
+
+### Sample response (WAITING)
+
+```json
+{
+  "status": "WAITING",
+  "bookingToken": "JWT_TOKEN_HERE",
+  "sessionId": "SESSION_UUID",
+  "expiresInSeconds": 600,
+  "pollAfterSeconds": 5,
+  "message": "Please wait while we get you available seats."
+}
+```
+
+***
+
+# 2.3 Seat Availability Service
+
+***
+
+## `GET /v1/events/{eventId}/seats?category_id=...`
+
+### Request
+
+```json
+{
+  "resource": "/v1/events/{eventId}/seats",
+  "path": "/v1/events/EVENT_UUID/seats",
+  "httpMethod": "GET",
+  "headers": {
+    "x-booking-token": "JWT_TOKEN_HERE"
+  },
+  "pathParameters": {
+    "eventId": "EVENT_UUID"
+  },
+  "queryStringParameters": {
+    "category_id": "CATEGORY_UUID_VIP"
+  },
+  "requestContext": {
+    "authorizer": {
+      "claims": {
+        "sub": "test-sub-123"
+      }
+    }
+  }
+}
+```
+
+### Sample response
+
+```json
+{
+  "eventId": "EVENT_UUID",
+  "categoryId": "CATEGORY_UUID_VIP",
+  "asOf": "2026-05-23T12:10:00+05:30",
+  "seats": [
+    {
+      "seatId": "A-0001",
+      "status": "AVAILABLE"
+    },
+    {
+      "seatId": "A-0002",
+      "status": "LOCKED"
+    },
+    {
+      "seatId": "A-0003",
+      "status": "BOOKED"
+    }
+  ]
+}
+```
+
+***
+
+# 2.4 Reservation Service
+
+***
+
+## `POST /reserveTicket`
+
+### Request
+
+```json
+{
+  "resource": "/reserveTicket",
+  "path": "/reserveTicket",
+  "httpMethod": "POST",
+  "headers": {
+    "content-type": "application/json",
+    "x-booking-token": "JWT_TOKEN_HERE",
+    "Idempotency-Key": "6a8aab06-8f91-4f8d-a953-8df9f90d3ef3"
+  },
+  "requestContext": {
+    "authorizer": {
+      "claims": {
+        "sub": "test-sub-123"
+      }
+    }
+  },
+  "body": "{\"eventId\":\"EVENT_UUID\",\"categoryId\":\"CATEGORY_UUID_VIP\",\"seats\":[{\"seatId\":\"A-0001\"},{\"seatId\":\"A-0002\"}]}",
+  "isBase64Encoded": false
+}
+```
+
+### Sample success response
+
+```json
+{
+  "reservationId": "RES_UUID",
+  "status": "SUCCESS",
+  "expiresAt": "2026-05-23T12:20:00Z",
+  "eventId": "EVENT_UUID",
+  "categoryId": "CATEGORY_UUID_VIP",
+  "pricing": {
+    "currency": "INR",
+    "unitPrice": 3000,
+    "quantity": 2,
+    "totalAmount": 6000
+  },
+  "seats": {
+    "requested": ["A-0001", "A-0002"],
+    "locked": ["A-0001", "A-0002"]
+  },
+  "nextActions": {
+    "canProceedToPayment": true,
+    "canCancel": true
+  }
+}
+```
+
+### Sample failure response
+
+```json
+{
+  "reservationId": "RES_UUID",
+  "status": "FAILED",
+  "eventId": "EVENT_UUID",
+  "categoryId": "CATEGORY_UUID_VIP",
+  "expiresAt": null,
+  "reason": "SEAT_ALREADY_LOCKED_CACHE",
+  "message": "Seat already locked: seatlock:{EVENT_UUID:CATEGORY_UUID_VIP}:A-0002",
+  "seats": {
+    "requested": ["A-0001", "A-0002"],
+    "locked": []
+  }
+}
+```
+
+***
+
+# 2.5 Payment Mock Service
+
+***
+
+## `POST /payment`
+
+### Request
+
+```json
+{
+  "resource": "/payment",
+  "path": "/payment",
+  "httpMethod": "POST",
+  "headers": {
+    "content-type": "application/json"
+  },
+  "requestContext": {
+    "authorizer": {
+      "claims": {
+        "sub": "test-sub-123"
+      }
+    }
+  },
+  "body": "{\"reservationId\":\"RES_UUID\",\"totalAmount\":6000}",
+  "isBase64Encoded": false
+}
+```
+
+### Sample success response
+
+```json
+{
+  "paymentId": "PAYMENT_UUID",
+  "reservationId": "RES_UUID",
+  "status": "SUCCESS",
+  "message": "Payment accepted (mock)"
+}
+```
+
+### Sample failure response
+
+```json
+{
+  "paymentId": "PAYMENT_UUID",
+  "reservationId": "RES_UUID",
+  "status": "FAILED",
+  "message": "Payment declined (mock)"
+}
+```
+
+***
+
+# 2.6 Booking Confirmation Service
+
+***
+
+## `POST /booking`
+
+### Request
+
+```json
+{
+  "resource": "/booking",
+  "path": "/booking",
+  "httpMethod": "POST",
+  "headers": {
+    "content-type": "application/json",
+    "x-booking-token": "JWT_TOKEN_HERE"
+  },
+  "requestContext": {
+    "authorizer": {
+      "claims": {
+        "sub": "test-sub-123"
+      }
+    }
+  },
+  "body": "{\"reservationId\":\"RES_UUID\",\"paymentId\":\"PAYMENT_UUID\",\"paymentStatus\":\"SUCCESS\",\"amount\":6000}",
+  "isBase64Encoded": false
+}
+```
+
+> If you haven’t yet patched confirmation service to require `paymentStatus` and `amount`, update the request according to your current implementation. But this is the recommended final shape.
+
+### Sample success response
+
+```json
+{
+  "reservationId": "RES_UUID",
+  "status": "CONFIRMED",
+  "paymentId": "PAYMENT_UUID",
+  "ticketIds": [
+    "TICKET_UUID_1",
+    "TICKET_UUID_2"
+  ],
+  "eventId": "EVENT_UUID",
+  "categoryId": "CATEGORY_UUID_VIP",
+  "seats": [
+    "A-0001",
+    "A-0002"
+  ],
+  "pricing": {
+    "totalAmount": 6000,
+    "currency": "INR"
+  },
+  "event": {
+    "name": "Demo Event",
+    "date": "2026-05-30 19:30:00+05:30",
+    "time": "19:30:00",
+    "venue": "Big Arena",
+    "address": "Demo Venue Address",
+    "category": "VIP"
+  }
+}
+```
+
+### Sample failure response (expired lock)
+
+```json
+{
+  "reservationId": "RES_UUID",
+  "status": "FAILED",
+  "reason": "SEAT_LOCK_INVALID_OR_EXPIRED",
+  "message": "Seat lock invalid or expired for key: seatlock:{EVENT_UUID:CATEGORY_UUID_VIP}:A-0001"
+}
+```
+
+***
+
+# 3) Suggested end-to-end test order
+
+Use this exact order when testing manually:
+
+1. **Browse**
+   * get `eventId`, `categoryId`
+2. **Queue**
+   * get `bookingToken`
+3. **Seat Availability**
+   * verify seats show `AVAILABLE/LOCKED/BOOKED`
+4. **Reservation**
+   * get `reservationId`, `totalAmount`, `expiresAt`
+5. **Payment Mock**
+   * get `paymentId`, `status=SUCCESS`
+6. **Booking Confirmation**
+   * get `ticketIds`, DB seats update to `BOOKED`
+
+***
