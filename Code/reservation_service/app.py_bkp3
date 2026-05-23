@@ -334,15 +334,6 @@ def _reserve_idempotency_key(event_id: str, category_id: str, user_sub: str, ide
     return f"reserve:{tag}:{user_sub}:{idem_key}"
 
 
-def _reservation_lookup_key(reservation_id: str) -> str:
-    # Keyed only by reservation_id so the booking service can resolve
-    # eventId and categoryId without the client sending them.
-    # Written as a separate SETEX after Lua succeeds because this key
-    # lands on a different cluster slot from the seat lock keys and
-    # cannot be included in the same Lua script (CROSSSLOT constraint).
-    return f"reservation:lookup:{reservation_id}"
-
-
 # ----------------------------
 # DB functions
 # ----------------------------
@@ -705,18 +696,6 @@ def handle_reserve(event, context):
     except Exception as e:
         logger.exception("Seat lock Lua execution failed")
         return _resp(500, {"error": "SEAT_LOCK_FAILED", "message": str(e)})
-
-    # Write lookup key so booking service can resolve eventId/categoryId from
-    # reservationId alone. Written outside Lua because reservation:lookup:{id}
-    # lands on a different cluster slot from the seat lock keys (CROSSSLOT).
-    try:
-        sl.setex(
-            _reservation_lookup_key(reservation_id),
-            seat_lock_ttl,
-            json.dumps({"eventId": event_id, "categoryId": category_id}),
-        )
-    except Exception:
-        logger.exception("Failed to write reservation lookup key (non-fatal)")
 
     return _resp(200, {
         "reservationId": reservation_id,
