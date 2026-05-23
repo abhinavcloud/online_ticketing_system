@@ -1,5 +1,37 @@
 # Online Ticket System
 
+## Contents
+## Table of Contents
+
+## Table of Contents
+
+- #overview
+- #problem-statement
+- #objectives
+- #functional-scope
+- #non-functional-design-principles
+- #high-level-architecture
+- #service-architecture
+- #consistency-model
+- #cache-key-design
+- #data-model
+- #end-to-end-flow
+- #api-surface
+- #booking-token
+- #reservation-contract
+- #payment-contract
+- #booking-confirmation-contract
+- #failure-handling
+- #security-model
+- #infrastructure-layout
+- #database-bootstrap
+- #deployment-process
+- #local-development-notes
+- #known-design-choices
+- #operational-notes
+- #future-improvements
+- #conclusion
+
 ## Overview
 
 This project is a cloud-native online ticketing platform designed for high-demand event booking scenarios where seat contention, fairness, and booking correctness matter more than raw CRUD simplicity. The system is built to support browsing events, filtering by location and venue, queue-based admission control, seat map retrieval, reservation with atomic seat locking, payment handoff, and booking confirmation. The design assumes that many users can request the same seats concurrently and that the system must prevent double booking without turning the database into a lock manager.
