@@ -170,7 +170,7 @@
         port = int(_env_str("SEAT_LOCK_CACHE_PORT") or "6379")
         cache_name = _env_str("SEAT_LOCK_CACHE_NAME", required=True)
         user_id = _env_str("SEAT_LOCK_ELASTICACHE_USER_ID", "ELASTICACHE_USER_ID", required=True)
-        region = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION")
+        region = os.environ.get("APP_REGION") or os.environ.get("AWS_DEFAULT_REGION")
 
         now = time.time()
         if _SEATLOCK_REDIS is not None and now < _SEATLOCK_REDIS_REFRESH_AT:
@@ -231,7 +231,7 @@
         db_port = int(os.environ.get("DB_PORT", "5432"))
         db_name = os.environ["DB_NAME"]
         db_user = os.environ["DB_USER"]
-        db_region = os.environ.get("DB_REGION") or os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION")
+        db_region = os.environ.get("DB_REGION") or os.environ.get("APP_REGION") or os.environ.get("AWS_DEFAULT_REGION")
         sslmode = os.environ.get("DB_SSLMODE", "require")
 
         token = _rds_iam_token(host=db_host, port=db_port, user=db_user, region=db_region)

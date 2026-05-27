@@ -470,6 +470,10 @@ resource "aws_lambda_function" "seat_availability_service" {
       # -----------------------------
       SEATS_PAGE_SIZE          = "200"
       SHOW_LOCK_EXPIRES_AT     = "false"
+      JWT_KMS_KEY_ID = aws_kms_key.queue_jwt_signing_key.key_id
+      JWT_ALG        = "RS256"
+      JWT_ISSUER     = "ticketing-queue"
+    
     }
   }
 
@@ -562,6 +566,12 @@ resource "aws_lambda_function" "reservation_service" {
       # -----------------------------
       SEATS_PAGE_SIZE          = "200"
       SHOW_LOCK_EXPIRES_AT     = "false"
+      #-----------------------------
+      # Authentication/Authorization (JWT via KMS)
+      #-----------------------------
+      JWT_KMS_KEY_ID = aws_kms_key.queue_jwt_signing_key.key_id
+      JWT_ALG        = "RS256"
+      JWT_ISSUER     = "ticketing-queue"
     }
   }
 
@@ -606,7 +616,6 @@ resource "aws_lambda_function" "payment_service" {
 
   environment {
     variables = {
-      # Use APP_REGION (do NOT set AWS_REGION - it's reserved by Lambda)
       PAYMENT_MOCK_MODE = "always_success" # Other values include "random", "always_failure"
       PAYMENT_MOCK_FAILURE_RATE = "0.1" # Percentage of falires if payment mock mode is random
     }
@@ -673,10 +682,12 @@ resource "aws_lambda_function" "confirmation_service" {
       DB_PORT = tostring(var.db_port)
       DB_NAME = var.db_name
       DB_USER = var.db_user
-
       DB_SSLMODE                 = "require"
       DB_IAM_TOKEN_REFRESH_SECONDS = "840"
-
+      JWT_KMS_KEY_ID = aws_kms_key.queue_jwt_signing_key.key_id
+      JWT_ALG        = "RS256"
+      JWT_ISSUER     = "ticketing-queue"
+      NOTIFICATION_TOPIC_ARN = var.notification_topic_arn
       # -----------------------------
       # Cache A (Queue cache == Active Users cache)
       # Used to verify sessionId is ALLOWED
@@ -695,14 +706,11 @@ resource "aws_lambda_function" "confirmation_service" {
       SEAT_LOCK_CACHE_NAME              = var.seat_lock_cache_name
       SEAT_LOCK_ELASTICACHE_USER_ID     = var.elasticache_user_id
 
-      # -----------------------------
-      # Behavior knobs
-      # -----------------------------
-      SEATS_PAGE_SIZE          = "200"
-      SHOW_LOCK_EXPIRES_AT     = "false"
-    }
   }
 
+      
+    }
+  
   tags = {
     Service = "ticketing"
     Name    = "confirmation-service"
