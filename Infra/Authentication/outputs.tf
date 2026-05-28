@@ -1,3 +1,5 @@
+data "aws_region" "current" {}
+
 output "user_pool_arn" {
     value = aws_cognito_user_pool.google.arn
     description = "ARN of the Cognito User Pool for Google Sign In"
