@@ -68,7 +68,7 @@ variable "root_domain" {
 variable "client_id" {
   description = "Cognito User Pool App Client ID for authentication"
   type        = string
-}
+ }
 
 variable "client_secret" {
   description = "Cognito User Pool App Client Secret for authentication"
