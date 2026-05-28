@@ -119,22 +119,16 @@ def _verify_booking_token(token: str) -> Dict[str, Any]:
         raise ValueError("Token expired")
 
     kms = boto3.client("kms", config=_BOTO_CFG)
-    kms.verify(
+    
+    verify_resp = kms.verify(
         KeyId=os.environ["JWT_KMS_KEY_ID"],
         Message=signing_input,
         MessageType="RAW",
         Signature=signature,
         SigningAlgorithm="RSASSA_PKCS1_V1_5_SHA_256",
     )
-
     
-    if not kms.verify(
-        KeyId=os.environ["JWT_KMS_KEY_ID"],
-        Message=signing_input,
-        MessageType="RAW",
-        Signature=signature,
-        SigningAlgorithm="RSASSA_PKCS1_V1_5_SHA_256",
-    )   .get("SignatureValid"):
+    if not verify_resp.get("SignatureValid"):
         raise ValueError("Invalid signature")
 
 
