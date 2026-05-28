@@ -49,5 +49,5 @@ variable "app_db_user" {
 variable "notification_email" {
   description = "Email address to receive notifications (must be subscribed to the SNS topic)"
   type        = string
-  default    = "abhinav01061987@gmail.com"
+  default    = "abhinav@abhinav-cloud.com"
 }
