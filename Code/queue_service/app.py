@@ -684,13 +684,13 @@ def handler(event, context):
     path = (event.get("resource") or event.get("path") or "").lower()
     method = (event.get("httpMethod") or "").upper()
 
-    if method == "POST" and path.endswith("/queue/enter"):
+    if method == "POST" and path.endswith("/v1/queue/enter"):
         return handle_enter(event, context)
 
-    if method == "POST" and path.endswith("/queue/poll"):
+    if method == "POST" and path.endswith("/v1/queue/poll"):
         return handle_poll(event, context)
 
-    if method == "POST" and path.endswith("/queue/release"):
+    if method == "POST" and path.endswith("/v1/queue/release"):
         return handle_release(event, context)
 
     return _resp(404, {"error": "NOT_FOUND", "message": f"Unsupported route {method} {path}"})

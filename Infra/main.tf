@@ -111,3 +111,22 @@ module "Notification" {
     source = "./Notification/"
     notification_email = var.notification_email
 }
+
+
+module "APIGateway" {
+    source = "./APIGateway/"
+    browse_service_arn = module.Compute.browse_service_arn
+    queue_service_arn = module.Compute.queue_service_arn
+    seat_availability_service_arn = module.Compute.seat_availability_service_arn
+    reservation_service_arn = module.Compute.reservation_service_arn
+    payment_service_arn = module.Compute.payment_service_arn
+    confirmation_service_arn = module.Compute.confirmation_service_arn
+    browse_service_name = module.Compute.browse_service_name
+    queue_service_name = module.Compute.queue_service_name
+    seat_availability_service_name = module.Compute.seat_availability_service_name
+    reservation_service_name = module.Compute.reservation_service_name
+    payment_service_name = module.Compute.payment_service_name
+    confirmation_service_name = module.Compute.confirmation_service_name
+  
+
+}

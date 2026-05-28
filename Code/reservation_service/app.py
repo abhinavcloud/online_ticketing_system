@@ -785,7 +785,7 @@ def handler(event, context):
     path = (event.get("resource") or event.get("path") or "").lower()
     method = (event.get("httpMethod") or "").upper()
 
-    if method == "POST" and path.endswith("/reserveticket"):
+    if method == "POST" and path.endswith("/v1/reserveticket"):
         return handle_reserve(event, context)
 
     return _resp(404, {"error": "NOT_FOUND", "message": f"Unsupported route {method} {path}"})

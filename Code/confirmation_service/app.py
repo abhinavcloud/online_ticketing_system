@@ -119,7 +119,7 @@ def _verify_booking_token(token: str) -> Dict[str, Any]:
         raise ValueError("Token expired")
 
     kms = boto3.client("kms", config=_BOTO_CFG)
-    
+
     verify_resp = kms.verify(
         KeyId=os.environ["JWT_KMS_KEY_ID"],
         Message=signing_input,
@@ -826,7 +826,7 @@ def handler(event, context):
     path = (event.get("resource") or event.get("path") or "").lower()
     method = (event.get("httpMethod") or "").upper()
 
-    if method == "POST" and path.endswith("/booking"):
+    if method == "POST" and path.endswith("/v1/booking"):
         return handle_booking(event, context)
 
     return _resp(404, {"error": "NOT_FOUND", "message": f"Unsupported route {method} {path}"})
