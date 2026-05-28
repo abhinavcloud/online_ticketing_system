@@ -141,9 +141,14 @@ def _verify_booking_token(token: str) -> Dict[str, Any]:
         SigningAlgorithm="RSASSA_PKCS1_V1_5_SHA_256",
     )
     
-    if not verify_resp.get("SignatureValid"):
+    if not kms.verify(
+        KeyId=os.environ["JWT_KMS_KEY_ID"],
+        Message=signing_input,
+        MessageType="RAW",
+        Signature=signature,
+        SigningAlgorithm="RSASSA_PKCS1_V1_5_SHA_256",
+    ).get("SignatureValid"):
         raise ValueError("Invalid signature")
-
 
     return payload
 
@@ -567,10 +572,10 @@ def handle_reserve(event, context):
     # Idempotency key is required to make reserveTicket retry-safe
     idem_key_header = h.get("idempotency-key")
     if not idem_key_header:
-            return _resp(400, {
-                "error": "MISSING_IDEMPOTENCY_KEY",
-                "message": "Idempotency-Key header is required"
-            })
+        return _resp(400, {
+            "error": "MISSING_IDEMPOTENCY_KEY",
+            "message": "Idempotency-Key header is required"
+        })
 
 
     # 1) Validate seats are AVAILABLE in DB
@@ -598,11 +603,11 @@ def handle_reserve(event, context):
     except Exception as e:
         unit_price, currency = 0, ""
         logger.exception("Pricing lookup failed")
-                return _resp(500, {
-                    "error": "PRICING_LOOKUP_FAILED",
-                    "message": str(e)
-                    }
-                )
+            return _resp(500, {
+                "error": "PRICING_LOOKUP_FAILED",
+                "message": str(e)
+                }
+            )
     total_amount = unit_price * len(seat_ids)
 
     # 2) Atomic lock in cache (all-or-none) + write reservation seats mapping with identical TTL
