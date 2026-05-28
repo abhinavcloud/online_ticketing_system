@@ -46,7 +46,7 @@ jobs:
                   terraform init -backend-config=backend.hcl
 
             - name: terraform-lock-release
-              run: terraform force-unlock -force YN8MZ2Q63QAJD9F2 
+              run: terraform force-unlock -force 480b02a4-4d00-6680-77bb-fb71d87280c9 
 
             - name: terraform-plan
               id: plan
