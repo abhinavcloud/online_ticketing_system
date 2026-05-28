@@ -130,4 +130,4 @@ variable "vpc_endpoint_security_group" { type = string }
 variable "seat_lock_cache_endpoint" { type = string }
 variable "seat_lock_cache_port" {type = number}
 variable "seat_lock_cache_name" {type = string}
-
+variable "notification_topic_arn" { type = string}

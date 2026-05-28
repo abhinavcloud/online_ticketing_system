@@ -45,3 +45,8 @@ variable "app_db_user" {
   description = "IAM-enabled Postgres user for application lambdas"
   default     = "app_user"
 }
+
+variable "notification_email" {
+  description = "Email address to receive notifications (must be subscribed to the SNS topic)"
+  type        = string
+}

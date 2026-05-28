@@ -95,7 +95,9 @@ module "Compute" {
     seat_lock_cache_port  = module.Cache.seat_lock_cache_port
     seat_lock_cache_name = module.Cache.seat_lock_cache_name
 
-
+    #Notification ARN
+    notification_topic_arn = module.Notification.ticketing_notifications_topic_arn
+  
 }
 
 module "Cache" {
@@ -103,4 +105,9 @@ module "Cache" {
     vpc_id = module.Network.vpc_id
     referenced_security_group_id = aws_security_group.lambda_sg.id
     subnet_group = [module.Network.subnet_01, module.Network.subnet_02, module.Network.subnet_03]
+}
+
+module "Notification" {
+    source = "./Notification/"
+    notification_email = var.notification_email
 }
