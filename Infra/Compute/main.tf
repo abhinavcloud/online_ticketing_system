@@ -113,12 +113,36 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution_policy" {
 
 
 
-# Create a lambda tole policy attachment to access resources inside VPC
+# Create a lambda role policy attachment to access resources inside VPC
 resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
   role       = aws_iam_role.lambda_role_ticket_system.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
+
+# Create a lambda policy to publish notifications to SNS topic
+resource "aws_iam_policy" "lambda_sns_publish_policy" {
+  name        = "lambda-sns-publish"
+  description = "Allow Lambda to publish to SNS topic for notifications"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Sid: "AllowSnsPublish",
+      Effect: "Allow",
+      Action: "sns:Publish",
+      Resource: var.notification_topic_arn
+    }]
+  })
+}
+
+
+# Create a lambda role policy attachment to allow publish to SNS topic for notifications
+resource "aws_iam_role_policy_attachment" "lambda_notification_access" {
+  role = aws_iam_role.lambda_role_ticket_system.name
+  policy_arn = aws_iam_policy.lambda_sns_publish_policy.arn
+}
+  
 
 # Create an Ingress rule for Lambda Security Group
 #resource "aws_vpc_security_group_ingress_rule" "rds_proxy_sg_ingress_rule" {
