@@ -127,6 +127,4 @@ module "APIGateway" {
     reservation_service_name = module.Compute.reservation_service_name
     payment_service_name = module.Compute.payment_service_name
     confirmation_service_name = module.Compute.confirmation_service_name
-  
-
 }
