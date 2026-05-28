@@ -157,14 +157,14 @@ resource "aws_lambda_permission" "apigw_invoke_browse_service" {
 # --------------------------------------------------------------------------------
 
 # Create JWT authorizer for API Gateway
-resource "aws_api_gateway_authorizer" "jwt_authorizer" {
-  name                   = "JWTAuthorizer"
-  rest_api_id            = aws_api_gateway_rest_api.ticketing_api.id
-  #authorizer_uri         = # Dummy Cognito URL whic will be added later once cognito user pool is created. This is required to avoid circular dependency as authorizer needs to be defined before methods and integrations
-  authorizer_result_ttl_in_seconds = 300
-  type                   = "COGNITO_USER_POOLS"
-  identity_source        = "method.request.header.Authorization"
-}
+#resource "aws_api_gateway_authorizer" "jwt_authorizer" {
+#  name                   = "JWTAuthorizer"
+#  rest_api_id            = aws_api_gateway_rest_api.ticketing_api.id
+#  #authorizer_uri         = # Dummy Cognito URL whic will be added later once cognito user pool is created. This is required to avoid circular dependency as authorizer needs to be defined before methods and integrations
+#  authorizer_result_ttl_in_seconds = 300
+#  type                   = "COGNITO_USER_POOLS"
+#  identity_source        = "method.request.header.Authorization"
+#}
 
 
 # --------------------------------------------------------------------------------
