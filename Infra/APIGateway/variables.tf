@@ -12,4 +12,4 @@ variable "seat_availability_service_name" { type = string }
 variable "reservation_service_name" { type = string }
 variable "payment_service_name" { type = string }
 variable "confirmation_service_name" { type = string }
-
+variable "user_pool_arn" { type = string }
