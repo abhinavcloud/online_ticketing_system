@@ -551,9 +551,9 @@ def handler(event: dict[str, Any], context: Any):
         data = _cached_json(key, ttl, lambda: _list_events(conn, location_id, performer_id, venue_id, page, page_size))
         return _json_response(200, data)
 
-    # GET /v1/events/{eventId}
-    if m == "GET" and p.startswith("/v1/events/"):
-        event_id = p.split("/v1/events/", 1)[1]
+    # GET /v1/event_detail/{eventId}
+    if m == "GET" and p.startswith("/v1/event_detail/"):
+        event_id = p.split("/v1/event_detail/", 1)[1]
         if not event_id:
             return _json_response(400, {"error": "MISSING_EVENT_ID"})
         key = f"browse:event:{event_id}"

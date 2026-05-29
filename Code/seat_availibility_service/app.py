@@ -486,8 +486,8 @@ def handler(event, context):
     path = (event.get("path") or "").lower()
     method = (event.get("httpMethod") or "").upper()
 
-    # GET /v1/events/{eventId}/seats?category_id=...
-    if method == "GET" and (resource.endswith("/v1/events/{eventid}/seats") or path.endswith("/seats")):
+    # GET /v1/event/{eventId}/seats?category_id=...
+    if method == "GET" and (resource.endswith("/v1/event/{eventid}/seats") or path.endswith("/seats")):
         return handle_get_seats(event, context)
 
     return _resp(404, {"error": "NOT_FOUND", "message": f"Unsupported route {method} {path}"})

@@ -126,11 +126,11 @@ resource "aws_api_gateway_integration" "events_get_integration" {
 
 # --------------------------------------------------------------------------------
 
-# Create v1/event/{eventId} resource, method and integration
+# Create v1/event_detail/{eventId} resource, method and integration
 resource "aws_api_gateway_resource" "event_detail_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
   parent_id   = aws_api_gateway_resource.v1_resource.id
-  path_part   = "events"
+  path_part   = "event_detail"
 }
 
 resource "aws_api_gateway_resource" "event_id_resource" {
@@ -293,14 +293,14 @@ resource "aws_api_gateway_resource" "event" {
   path_part   = "event"
 }
 
-# Create v1/events/{eventId} resource, method and integration
+# Create v1/event/{eventId} resource, method and integration
 resource "aws_api_gateway_resource" "eventid_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
   parent_id   = aws_api_gateway_resource.event.id
   path_part   = "{eventId}"
 }
 
-# Create v1/events/{eventId}/seats resource, method and integration
+# Create v1/event/{eventId}/seats resource, method and integration
 resource "aws_api_gateway_resource" "event_seats_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
   parent_id   = aws_api_gateway_resource.eventid_resource.id
