@@ -601,7 +601,7 @@ resource "aws_lambda_function" "reservation_service" {
 
   tags = {
     Service = "ticketing"
-    Name    = "reservation-service"
+    Name    = "payment-service"
   }
 }
 
