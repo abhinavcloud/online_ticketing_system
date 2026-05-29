@@ -1,9 +1,9 @@
 # Generate Lambda ARNs and name as outputs to use in APIGateway Module
 
-output "browse_service_arn" {
-    value = aws_lambda_function.browse_service.arn
-    description = "ARN of the Browse Service Lambda function"
-}
+    output "browse_service_arn" {
+        value = aws_lambda_function.browse_service.arn
+        description = "ARN of the Browse Service Lambda function"
+    }
 
 output "browse_service_name" {
     value = aws_lambda_function.browse_service.function_name
