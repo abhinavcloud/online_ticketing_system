@@ -381,7 +381,7 @@ environment {
     # -------------------------------------------------------------------
     # Queue behavior (HLD-driven + safe guardrails)
     # -------------------------------------------------------------------
-    QUEUE_ALLOWED_TTL_SECONDS          = "600"  # 10 minutes
+    QUEUE_ALLOWED_TTL_SECONDS          = "900"  # 15 minutes
     QUEUE_POLL_AFTER_SECONDS           = "5"
     QUEUE_OVERSELL_FACTOR              = "2"
 

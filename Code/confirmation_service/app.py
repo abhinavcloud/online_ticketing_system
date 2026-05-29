@@ -279,6 +279,11 @@ def _reservation_lookup_key(reservation_id: str) -> str:
     return f"reservation:lookup:{reservation_id}"
 
 
+def _seats_lock_count_key(event_id: str, category_id: str) -> str:
+    tag = _tag(event_id, category_id)
+    return f"seatlock:{tag}:locked_count"
+
+
 # ----------------------------
 # Lua: verify all seat locks still exist (atomic check, all-or-nothing)
 # KEYS[1..N]: seat lock keys
@@ -300,6 +305,28 @@ end
 return {1, ''}
 """
 
+_RELEASE_LOCKS_LUA = r"""
+local res_id    = ARGV[1]
+local count_key = KEYS[#KEYS]
+local deleted = 0
+
+for i = 1, #KEYS - 1 do
+    local v = redis.call('GET', KEYS[i])
+    if v and v == res_id then
+        redis.call('DEL', KEYS[i])
+        deleted = deleted + 1
+    end
+end
+
+if deleted > 0 then
+    local new_val = redis.call('DECRBY', count_key, deleted)
+    if int(new_val) < 0 then
+        redis.call('SET', count_key, 0)
+    end
+end
+
+return deleted
+"""
 
 # ----------------------------
 # Cache helpers
@@ -313,6 +340,15 @@ def _delete_locks_best_effort(sl, keys: List[str]) -> None:
     except Exception:
         logger.exception("Failed to delete seat locks (best-effort)")
 
+
+def _delete_locks_and_decrement(sl, lock_keys: List[str], count_key: str, reservation_id: str) -> None:
+    if not lock_keys:
+        return
+    try:
+        all_keys = lock_keys + [count_key]
+        sl.eval(_RELEASE_LOCKS_LUA, len(all_keys) + 1, *all_keys, reservation_id)
+    except Exception:
+        logger.exception("Failed to delete seat locks and decrement count (best-effort)")
 
 # ----------------------------
 # Notification (SNS, best-effort)
@@ -657,8 +693,9 @@ def handle_booking(event, context):
         })
 
 
-    # Build seat lock keys
+    # Build seat lock keys and the shared counter key
     lock_keys = [_seat_lock_key(event_id, category_id, sid) for sid in seat_ids]
+    count_key = _seats_lock_count_key(event_id, category_id)
 
     # Check all seat locks still exist in cache (atomic Lua)
     try:
@@ -670,7 +707,7 @@ def handle_booking(event, context):
 
     if ok != 1:
         # At least one lock is gone — delete all remaining locks and fail
-        _delete_locks_best_effort(sl, lock_keys)
+        _delete_locks_and_decrement(sl, lock_keys, count_key, reservation_id)
         _notify_best_effort({
             "type": "BOOKING_FAILED",
             "userId": user_sub,
@@ -692,7 +729,7 @@ def handle_booking(event, context):
     try:
         _validate_seats_available_db(event_id, category_id, seat_ids)
     except Exception as e:
-        _delete_locks_best_effort(sl, lock_keys)
+        _delete_locks_and_decrement(sl, lock_keys, count_key, reservation_id)
         _notify_best_effort({
             "type": "BOOKING_FAILED",
             "userId": user_sub,
@@ -715,7 +752,7 @@ def handle_booking(event, context):
         event_details = _fetch_event_details(event_id, category_id)
     except Exception as e:
         logger.exception("Event details fetch failed")
-        _delete_locks_best_effort(sl, lock_keys)
+        _delete_locks_and_decrement(sl, lock_keys, count_key, reservation_id)
         _notify_best_effort({
             "type": "BOOKING_FAILED",
             "userId": user_sub,
@@ -747,7 +784,7 @@ def handle_booking(event, context):
         )
     except Exception as e:
         logger.exception("DB booking transaction failed")
-        _delete_locks_best_effort(sl, lock_keys)
+        _delete_locks_and_decrement(sl, lock_keys, count_key, reservation_id)
         _notify_best_effort({
             "type": "BOOKING_FAILED",
             "userId": user_sub,
@@ -766,7 +803,7 @@ def handle_booking(event, context):
         })
 
     # Booking confirmed — release seat locks and lookup key from cache
-    _delete_locks_best_effort(sl, lock_keys)
+    _delete_locks_and_decrement(sl, lock_keys, count_key, reservation_id)
     try:
         sl.delete(
             _reservation_lookup_key(reservation_id),

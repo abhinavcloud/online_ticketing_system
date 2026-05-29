@@ -152,16 +152,6 @@ def _verify_booking_token(token: str) -> Dict[str, Any]:
 # ElastiCache Serverless IAM auth (Valkey)
 # ----------------------------
 
-    ).get("SignatureValid"):
-        raise ValueError("Invalid signature")
-
-    return payload
-
-
-# ----------------------------
-# ElastiCache Serverless IAM auth (Valkey)
-# ----------------------------
-
 def _elasticache_iam_token(user_id: str, cache_name: str, region: str) -> str:
     """SigV4 presigned URL used as password for ElastiCache Serverless IAM auth (TLS required)."""
     cache_name = cache_name.lower()
@@ -356,6 +346,10 @@ def _reservation_lookup_key(reservation_id: str) -> str:
     # cannot be included in the same Lua script (CROSSSLOT constraint).
     return f"reservation:lookup:{reservation_id}"
 
+def _seat_lock_count_key(event_id: str, category_id: str) -> str:
+    tag = _tag(event_id, category_id)
+    return f"seatlock:{tag}:locked_count"
+
 
 # ----------------------------
 # DB functions
@@ -459,11 +453,12 @@ local res_id     = ARGV[2]
 local seats_json = ARGV[3]
 local meta_json  = ARGV[4]
 
+local count_key = KEYS[#KEYS - 3]
 local seats_key  = KEYS[#KEYS - 2]
 local meta_key   = KEYS[#KEYS - 1]
 local idem_key   = KEYS[#KEYS]
 
-local n_seats = #KEYS - 3
+local n_seats = #KEYS - 4
 
 -- 0) Idempotency: if exists, return existing reservation id
 local existing = redis.call('GET', idem_key)
@@ -483,11 +478,15 @@ for i = 1, n_seats do
   redis.call('SET', KEYS[i], res_id, 'EX', ttl, 'NX')
 end
 
--- 3) Write reservation seats mapping + meta with identical TTL
+-- 3) Increment seat lock count for this event+category (used by queue service for promotion), with identical TTL
+redis.call('INCRBY', count_key, n_seats)
+redis.call('EXPIRE', count_key, ttl)
+
+-- 4) Write reservation seats mapping + meta with identical TTL
 redis.call('SET', seats_key, seats_json, 'EX', ttl)
 redis.call('SET', meta_key,  meta_json,  'EX', ttl)
 
--- 4) Write idempotency key -> reservation id with identical TTL
+-- 5) Write idempotency key -> reservation id with identical TTL
 redis.call('SET', idem_key, res_id, 'EX', ttl)
 
 return {1, ''}
@@ -624,6 +623,10 @@ def handle_reserve(event, context):
 
     lock_keys = [_seat_lock_key(event_id, category_id, sid) for sid in seat_ids]
 
+    # Locked count key for this event+category (used by queue service for promotion), with identical TTL
+    count_key = _seat_lock_count_key(event_id, category_id)
+    
+
     # Existing seats list key
     reservation_seats_key = _reservation_seats_key(event_id, category_id, reservation_id)
 
@@ -741,6 +744,13 @@ def handle_reserve(event, context):
 
         # Cleanup everything written in cache for this reservation
         try:
+            n = len(lock_keys)
+            if n > 0:
+                new_val = sl.decrby(count_key, n)
+                if int(new_val) < 0:
+                    logger.warning(f"Seat lock count for {event_id}/{category_id} went negative, resetting to 0")
+                    sl.set(count_key, 0)
+            
             sl.delete(
                 *lock_keys,
                 reservation_seats_key,

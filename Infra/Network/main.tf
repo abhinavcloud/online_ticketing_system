@@ -125,3 +125,56 @@ resource "aws_vpc_endpoint" "kms" {
     Type = "VPC_Endpoint"
   }
 }
+
+
+# Create a VPC Endpoint for Lambda to connect to SNS
+
+## Create a security group for SNSVPC Endpoint with Lambda SG as Ingress and Any as Egress
+
+
+resource "aws_security_group" "sns_vpce_sg" {
+  name        = "sns-vpce-sg"
+  description = "Security group for SNS VPC Interface Endpoint"
+  vpc_id      = aws_vpc.vpc.id
+
+  tags = {
+    Name = "sns-vpce-sg"
+ 
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "sns_vpce_ingress_from_lambda" {
+  security_group_id            = aws_security_group.sns_vpce_sg.id
+  ip_protocol                  = "tcp"
+  from_port                    = 443
+  to_port                      = 443
+  referenced_security_group_id = var.referenced_security_group_id
+  description                  = "Allow Lambda SG to reach SNS VPCE on 443"
+}
+
+
+resource "aws_vpc_security_group_egress_rule" "sns_vpce_egress_all" {
+  security_group_id = aws_security_group.sns_vpce_sg.id
+  ip_protocol       = "-1"
+  cidr_ipv4         = "0.0.0.0/0"
+  description       = "Allow VPCE responses"
+}
+
+resource "aws_vpc_endpoint" "sns" {
+  vpc_id            = aws_vpc.vpc.id
+  service_name      = "com.amazonaws.${var.region}.sns"
+  vpc_endpoint_type = "Interface"
+  subnet_ids =  local.private_subnet_ids
+
+  security_group_ids = [
+    aws_security_group.sns_vpce_sg.id,
+  ]
+
+  private_dns_enabled = true
+
+  tags = {
+    Name = "VPC_Endpoint_from_Lambda_to_SNS"
+    Type = "VPC_Endpoint"
+  }
+}
+

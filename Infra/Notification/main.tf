@@ -1,7 +1,6 @@
 resource "aws_sns_topic" "ticketing_notifications" {
   name                        = "ticketing-notifications.fifo"
-  fifo_topic                  = true
-  content_based_deduplication = true
+  fifo_topic                  = false
 }
 
 resource "aws_sns_topic_subscription" "ticketing_notifications_subscription" {

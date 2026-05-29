@@ -10,12 +10,12 @@ resource "aws_api_gateway_rest_api" "ticketing_api" {
 
 # --------------------------------------------------------------------------------
 
-# Get /v1/location resource, method and integration
+# Get v1/location resource, method and integration
 
 resource "aws_api_gateway_resource" "location_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
   parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "/v1/location"
+  path_part   = "v1/location"
 }
 
 resource "aws_api_gateway_method" "location_get_method" {
@@ -37,11 +37,11 @@ resource "aws_api_gateway_integration" "location_get_integration" {
 
 # --------------------------------------------------------------------------------
 
-# Get /v1/venue resource, method and integration
+# Get v1/venue resource, method and integration
 resource "aws_api_gateway_resource" "venue_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
   parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "/v1/venue"
+  path_part   = "v1/venue"
 }
 
 resource "aws_api_gateway_method" "venue_get_method" {
@@ -64,11 +64,11 @@ resource "aws_api_gateway_integration" "venue_get_integration" {
 
 # --------------------------------------------------------------------------------
 
-# Create /v1/performers resource, method and integration
+# Create v1/performers resource, method and integration
 resource "aws_api_gateway_resource" "performers_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
   parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "/v1/performers"
+  path_part   = "v1/performers"
 }
 
 resource "aws_api_gateway_method" "performers_get_method" {
@@ -91,11 +91,11 @@ resource "aws_api_gateway_integration" "performers_get_integration" {
 
 # --------------------------------------------------------------------------------
 
-# Create /v1/events resource, method and integration
+# Create v1/events resource, method and integration
 resource "aws_api_gateway_resource" "events_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
   parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "/v1/events"
+  path_part   = "v1/events"
 }
 
 resource "aws_api_gateway_method" "events_get_method" {
@@ -118,11 +118,11 @@ resource "aws_api_gateway_integration" "events_get_integration" {
 
 # --------------------------------------------------------------------------------
 
-# Create /v1/event/{eventId} resource, method and integration
+# Create v1/event/{eventId} resource, method and integration
 resource "aws_api_gateway_resource" "event_detail_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
   parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "/v1/event/{eventId}"
+  path_part   = "v1/event/{eventId}"
 }
 
 resource "aws_api_gateway_method" "event_detail_get_method" {
@@ -169,18 +169,19 @@ resource "aws_api_gateway_authorizer" "jwt_authorizer" {
 
 # --------------------------------------------------------------------------------
 
-# Create /v1/queue/enter resource, method and integration
+# Create v1/queue/enter resource, method and integration
 resource "aws_api_gateway_resource" "queue_enter_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
   parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "/v1/queue/enter"
+  path_part   = "v1/queue/enter"
 }
 
 resource "aws_api_gateway_method" "queue_enter_post_method" {
   rest_api_id   = aws_api_gateway_rest_api.ticketing_api.id
   resource_id   = aws_api_gateway_resource.queue_enter_resource.id
   http_method   = "POST"
-  authorization = "JWT" # Change to JWT authorizer once it's properly set up
+  authorization = "COGNITO_USER_POOLS" 
+  authorizer_id = aws_api_gateway_authorizer.jwt_authorizer.id
 }
 
 resource "aws_api_gateway_integration" "queue_enter_post_integration" {
@@ -196,18 +197,19 @@ resource "aws_api_gateway_integration" "queue_enter_post_integration" {
 
 # --------------------------------------------------------------------------------
 
-# Create /v1/queue/poll resource, method and integration
+# Create v1/queue/poll resource, method and integration
 resource "aws_api_gateway_resource" "queue_poll_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
   parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "/v1/queue/poll"
+  path_part   = "v1/queue/poll"
 }
 
 resource "aws_api_gateway_method" "queue_poll_post_method" {
   rest_api_id   = aws_api_gateway_rest_api.ticketing_api.id
   resource_id   = aws_api_gateway_resource.queue_poll_resource.id
   http_method   = "POST"
-  authorization = "JWT" # Change to JWT authorizer once it's properly set up
+  authorization = "COGNITO_USER_POOLS" 
+  authorizer_id = aws_api_gateway_authorizer.jwt_authorizer.id
 }
 
 resource "aws_api_gateway_integration" "queue_poll_post_integration" {
@@ -223,18 +225,19 @@ resource "aws_api_gateway_integration" "queue_poll_post_integration" {
 
 # --------------------------------------------------------------------------------
 
-# Create /v1/queue/release  resource, method and integration
+# Create v1/queue/release  resource, method and integration
 resource "aws_api_gateway_resource" "queue_release_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
   parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "/v1/queue/release"
+  path_part   = "v1/queue/release"
 }
 
 resource "aws_api_gateway_method" "queue_release_post_method" {
   rest_api_id   = aws_api_gateway_rest_api.ticketing_api.id
   resource_id   = aws_api_gateway_resource.queue_release_resource.id
   http_method   = "POST"
-  authorization = "JWT" # Change to JWT authorizer once it's properly set up
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.jwt_authorizer.id
 }
 
 resource "aws_api_gateway_integration" "queue_release_post_integration" {
@@ -261,18 +264,19 @@ resource "aws_lambda_permission" "apigw_invoke_queue_service" {
 
 # --------------------------------------------------------------------------------
 
-# Create /v1/events/{eventId}/seats resource, method and integration
+# Create v1/events/{eventId}/seats resource, method and integration
 resource "aws_api_gateway_resource" "event_seats_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
   parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "/v1/event/{eventId}/seats"
+  path_part   = "v1/event/{eventId}/seats"
 }
 
 resource "aws_api_gateway_method" "event_seats_get_method" {
   rest_api_id   = aws_api_gateway_rest_api.ticketing_api.id
   resource_id   = aws_api_gateway_resource.event_seats_resource.id
   http_method   = "GET"
-  authorization = "JWT" # Change to JWT authorizer once it's properly set up
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.jwt_authorizer.id
 }
 
 resource "aws_api_gateway_integration" "event_seats_get_integration" {
@@ -304,14 +308,15 @@ resource "aws_lambda_permission" "apigw_invoke_seat_availability_service" {
 resource "aws_api_gateway_resource" "reserve_ticket_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
   parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "/v1/reserveticket"
+  path_part   = "v1/reserveticket"
 }
 
 resource "aws_api_gateway_method" "reserve_ticket_post_method" {
   rest_api_id   = aws_api_gateway_rest_api.ticketing_api.id
   resource_id   = aws_api_gateway_resource.reserve_ticket_resource.id
   http_method   = "POST"
-  authorization = "JWT" # Change to JWT authorizer once it's properly set up
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.jwt_authorizer.id
 }
 
 resource "aws_api_gateway_integration" "reserve_ticket_post_integration" {
@@ -338,18 +343,19 @@ resource "aws_lambda_permission" "apigw_invoke_reservation_service" {
 
 # --------------------------------------------------------------------------------
 
-# Create /v1/payment resource, method and integration
+# Create v1/payment resource, method and integration
 resource "aws_api_gateway_resource" "payment_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
   parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "/v1/payment"
+  path_part   = "v1/payment"
 }
 
 resource "aws_api_gateway_method" "payment_post_method" {
   rest_api_id   = aws_api_gateway_rest_api.ticketing_api.id
   resource_id   = aws_api_gateway_resource.payment_resource.id
   http_method   = "POST"
-  authorization = "JWT" # Change to JWT authorizer once it's properly set up
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.jwt_authorizer.id
 }
 
 resource "aws_api_gateway_integration" "payment_post_integration" {
@@ -377,18 +383,19 @@ resource "aws_lambda_permission" "apigw_invoke_payment_service" {
 
 # --------------------------------------------------------------------------------
 
-# Create /v1/booking resource, method and integration
+# Create v1/booking resource, method and integration
 resource "aws_api_gateway_resource" "booking_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
   parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "/v1/booking"
+  path_part   = "v1/booking"
 }
 
 resource "aws_api_gateway_method" "booking_post_method" {
   rest_api_id   = aws_api_gateway_rest_api.ticketing_api.id
   resource_id   = aws_api_gateway_resource.booking_resource.id
   http_method   = "POST"
-  authorization = "JWT" # Change to JWT authorizer once it's properly set up
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.jwt_authorizer.id
 }
 
 resource "aws_api_gateway_integration" "booking_post_integration" {

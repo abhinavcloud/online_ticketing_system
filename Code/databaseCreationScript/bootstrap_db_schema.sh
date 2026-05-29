@@ -179,7 +179,7 @@ CREATE TABLE IF NOT EXISTS public.seats (
   event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
   category_id UUID NOT NULL REFERENCES public.event_categories(id) ON DELETE CASCADE,
   seat_label TEXT NOT NULL,
-  status seat_status NOT NULL DEFAULT 'AVAILABLE',
+  status  NOT NULL DEFAULT 'AVAILABLE',
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   booked_at TIMESTAMPTZ,
   UNIQUE(event_id, seat_label)

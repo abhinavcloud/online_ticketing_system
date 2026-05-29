@@ -37,6 +37,10 @@ _BOTO_CFG = Config(connect_timeout=2, read_timeout=3, retries={"max_attempts": 1
 _QUEUE_REDIS = None
 _QUEUE_REDIS_REFRESH_AT = 0.0
 
+# Cache B == Seat lock cache (Valkey Serverless IAM)
+_SEAT_LOCK_REDIS = None
+_SEAT_LOCK_REDIS_REFRESH_AT = 0.0
+
 # DB connection (Aurora via RDS Proxy)
 _DB_CONN = None
 _DB_CONN_REFRESH_AT = 0.0
@@ -154,6 +158,50 @@ def _queue_cache():
     _QUEUE_REDIS = client
     _QUEUE_REDIS_REFRESH_AT = now + (14 * 60)
     return client
+
+    def _seat_lock_cache():
+        """Cache B == Seat lock cache (Valkey). Similar to _queue_cache but separate connection and env vars."""
+        global _SEAT_LOCK_REDIS, _SEAT_LOCK_REDIS_REFRESH_AT
+
+        if redis is None:
+            raise RuntimeError("redis library not available. Add redis to your Lambda layer/package.")
+
+        endpoint = _env_str("SEAT_LOCK_CACHE_ENDPOINT", required=True)
+        port = int(_env_str("SEAT_LOCK_CACHE_PORT") or "6379")
+        cache_name = _env_str("SEAT_LOCK_CACHE_NAME", required=True)
+        user_id = _env_str("SEAT_LOCK_ELASTICACHE_USER_ID", required=True)
+        region = os.environ.get("APP_REGION") or os.environ.get("AWS_DEFAULT_REGION")
+
+        now = time.time()
+        if _SEAT_LOCK_REDIS is not None and now < _SEAT_LOCK_REDIS_REFRESH_AT:
+            return _SEAT_LOCK_REDIS
+
+        token = _elasticache_iam_token(user_id=user_id, cache_name=cache_name, region=region)
+
+        client = redis.Redis(
+            host=endpoint,
+            port=port,
+            username=user_id,
+            password=token,
+            ssl=True,
+            ssl_cert_reqs=None,
+            decode_responses=True,
+            socket_connect_timeout=2,
+            socket_timeout=2,
+        )
+        client.ping()
+
+        _SEAT_LOCK_REDIS = client
+        _SEAT_LOCK_REDIS_REFRESH_AT = now + (14 * 60)
+        return client
+    
+    def _count_locked_seats(event_id: str, category_id: str) -> int:
+        """Read the locked_count counter written atomically by reservation_service when it creates seat locks. This is used in handle_poll to determine how many seats are currently locked."""
+        """Single GET call - 0(1) regardless of how many seats are locked."""
+        tag = f"{{{event_id}:{category_id}}}"
+        count_key = f"seatlock:{tag}:locked_count"
+        sl = _seatlock_cache()
+        return int(sl.get(count_key) or 0)
 
 
 # ----------------------------
@@ -580,7 +628,7 @@ def handle_poll(event, context):
 
     # Promotion computed from 3 sources:
     #   - active_count from Cache A (Queue cache)
-    #   - locked_seats from Cache B (not implemented yet => 0)
+    #   - locked_seats from Cache B
     #   - available_seats from DB (via RDS Proxy IAM auth)
     if max_active > 0:
         lock_val = str(uuid.uuid4())
@@ -589,7 +637,13 @@ def handle_poll(event, context):
         if got_lock:
             try:
                 active_count = int(q.get(active_key) or 0)
-                locked_seats = 0
+                
+                try:
+                    locked_seats = _count_locked_seats(event_id, category_id)
+                except Exception:
+                    logger.exception("Failed to read locked seats from cache; assuming 0")
+                    locked_seats = 0
+
                 available_seats = _available_seats_from_db(event_id, category_id)
 
                 available_users = max(max_active - active_count, 0)

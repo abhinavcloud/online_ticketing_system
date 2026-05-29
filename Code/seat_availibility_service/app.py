@@ -327,16 +327,16 @@ def _seat_lock_key(event_id: str, category_id: str, seat_id: str) -> str:
 def _fetch_seats_from_db(event_id: str, category_id: str, limit: int) -> List[Dict[str, Any]]:
     """Return all seats for event+category, including AVAILABLE and BOOKED.
 
-    Expected schema columns: seats(event_id, category_id, seat_number, seat_row, seat_no, status)
+    Expected schema columns: seats(event_id, category_id, seat_label,  status)
     """
     global _DB_CONN, _DB_CONN_REFRESH_AT
 
     sql = """
-        SELECT seat_number, seat_row, seat_no, status
+        SELECT seat_label, status
         FROM seats
         WHERE event_id = %s
           AND category_id = %s
-        ORDER BY seat_number
+        ORDER BY seat_label
         LIMIT %s
     """
 
