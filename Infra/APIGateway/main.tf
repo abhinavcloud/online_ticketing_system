@@ -10,12 +10,20 @@ resource "aws_api_gateway_rest_api" "ticketing_api" {
 
 # --------------------------------------------------------------------------------
 
+# v1 resource to be used as parent for all other resources to maintain versioning in API design
+resource "aws_api_gateway_resource" "v1_resource" {
+  rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
+  parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
+  path_part   = "v1"
+}
+
+
 # Get v1/location resource, method and integration
 
 resource "aws_api_gateway_resource" "location_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
-  parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "v1/location"
+  parent_id   = aws_api_gateway_resource.v1_resource.id
+  path_part   = "location"
 }
 
 resource "aws_api_gateway_method" "location_get_method" {
@@ -40,8 +48,8 @@ resource "aws_api_gateway_integration" "location_get_integration" {
 # Get v1/venue resource, method and integration
 resource "aws_api_gateway_resource" "venue_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
-  parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "v1/venue"
+  parent_id   = aws_api_gateway_resource.v1_resource.id
+  path_part   = "venue"
 }
 
 resource "aws_api_gateway_method" "venue_get_method" {
@@ -67,8 +75,8 @@ resource "aws_api_gateway_integration" "venue_get_integration" {
 # Create v1/performers resource, method and integration
 resource "aws_api_gateway_resource" "performers_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
-  parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "v1/performers"
+  parent_id   = aws_api_gateway_resource.v1_resource.id
+  path_part   = "performers"
 }
 
 resource "aws_api_gateway_method" "performers_get_method" {
@@ -94,8 +102,8 @@ resource "aws_api_gateway_integration" "performers_get_integration" {
 # Create v1/events resource, method and integration
 resource "aws_api_gateway_resource" "events_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
-  parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "v1/events"
+  parent_id   = aws_api_gateway_resource.v1_resource.id
+  path_part   = "events"
 }
 
 resource "aws_api_gateway_method" "events_get_method" {
@@ -121,20 +129,26 @@ resource "aws_api_gateway_integration" "events_get_integration" {
 # Create v1/event/{eventId} resource, method and integration
 resource "aws_api_gateway_resource" "event_detail_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
-  parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "v1/event/{eventId}"
+  parent_id   = aws_api_gateway_resource.v1_resource.id
+  path_part   = "event"
+}
+
+resource "aws_api_gateway_resource" "event_id_resource" {
+  rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
+  parent_id   = aws_api_gateway_resource.event_detail_resource.id
+  path_part   = "{eventId}"
 }
 
 resource "aws_api_gateway_method" "event_detail_get_method" {
   rest_api_id   = aws_api_gateway_rest_api.ticketing_api.id
-  resource_id   = aws_api_gateway_resource.event_detail_resource.id
+  resource_id   = aws_api_gateway_resource.event_id_resource.id
   http_method   = "GET"
   authorization = "NONE"
 }
 
 resource "aws_api_gateway_integration" "event_detail_get_integration" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
-  resource_id = aws_api_gateway_resource.event_detail_resource.id
+  resource_id = aws_api_gateway_resource.event_id_resource.id
   http_method = aws_api_gateway_method.event_detail_get_method.http_method
 
   integration_http_method = "POST"
@@ -170,10 +184,17 @@ resource "aws_api_gateway_authorizer" "jwt_authorizer" {
 # --------------------------------------------------------------------------------
 
 # Create v1/queue/enter resource, method and integration
+
+resource "aws_api_gateway_resource" "queue_resource" {
+  rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
+  parent_id   = aws_api_gateway_resource.v1_resource.id
+  path_part   = "queue"
+}
+
 resource "aws_api_gateway_resource" "queue_enter_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
-  parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "v1/queue/enter"
+  parent_id   = aws_api_gateway_resource.queue_resource.id
+  path_part   = "enter"
 }
 
 resource "aws_api_gateway_method" "queue_enter_post_method" {
@@ -200,8 +221,8 @@ resource "aws_api_gateway_integration" "queue_enter_post_integration" {
 # Create v1/queue/poll resource, method and integration
 resource "aws_api_gateway_resource" "queue_poll_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
-  parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "v1/queue/poll"
+  parent_id   = aws_api_gateway_resource.queue_resource.id
+  path_part   = "poll"
 }
 
 resource "aws_api_gateway_method" "queue_poll_post_method" {
@@ -228,8 +249,8 @@ resource "aws_api_gateway_integration" "queue_poll_post_integration" {
 # Create v1/queue/release  resource, method and integration
 resource "aws_api_gateway_resource" "queue_release_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
-  parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "v1/queue/release"
+  parent_id   = aws_api_gateway_resource.queue_resource.id
+  path_part   = "release"
 }
 
 resource "aws_api_gateway_method" "queue_release_post_method" {
@@ -264,11 +285,26 @@ resource "aws_lambda_permission" "apigw_invoke_queue_service" {
 
 # --------------------------------------------------------------------------------
 
+# Create v1/event resource
+
+resource "aws_api_gateway_resource" "event" {
+  rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
+  parent_id   = aws_api_gateway_resource.v1_resource.id
+  path_part   = "event"
+}
+
+# Create v1/events/{eventId} resource, method and integration
+resource "aws_api_gateway_resource" "event_id_resource" {
+  rest_api_id = aws_api_gateway_rest_apiticketing_api.id
+  parent_id   = aws_api_gateway_rest_api.event.root_resource_id
+  path_part   = "{eventId}"
+}
+
 # Create v1/events/{eventId}/seats resource, method and integration
 resource "aws_api_gateway_resource" "event_seats_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
-  parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "v1/event/{eventId}/seats"
+  parent_id   = aws_api_gateway_resource.event_id_resource.id
+  path_part   = "seats"
 }
 
 resource "aws_api_gateway_method" "event_seats_get_method" {
@@ -304,11 +340,11 @@ resource "aws_lambda_permission" "apigw_invoke_seat_availability_service" {
 
 # --------------------------------------------------------------------------------
 
-# Create /reserveticket resource, method and integration
+# Create /v1/reserveticket resource, method and integration
 resource "aws_api_gateway_resource" "reserve_ticket_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
-  parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "v1/reserveticket"
+  parent_id   = aws_api_gateway_rest_api.v1_resource.id
+  path_part   = "reserveticket"
 }
 
 resource "aws_api_gateway_method" "reserve_ticket_post_method" {
@@ -346,8 +382,8 @@ resource "aws_lambda_permission" "apigw_invoke_reservation_service" {
 # Create v1/payment resource, method and integration
 resource "aws_api_gateway_resource" "payment_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
-  parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "v1/payment"
+  parent_id   = aws_api_gateway_rest_api.v1_resource.id
+  path_part   = "payment"
 }
 
 resource "aws_api_gateway_method" "payment_post_method" {
@@ -386,8 +422,8 @@ resource "aws_lambda_permission" "apigw_invoke_payment_service" {
 # Create v1/booking resource, method and integration
 resource "aws_api_gateway_resource" "booking_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
-  parent_id   = aws_api_gateway_rest_api.ticketing_api.root_resource_id
-  path_part   = "v1/booking"
+  parent_id   = aws_api_gateway_rest_api.v1_resource.id
+  path_part   = "booking"
 }
 
 resource "aws_api_gateway_method" "booking_post_method" {
