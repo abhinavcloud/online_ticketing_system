@@ -62,6 +62,7 @@ resource "aws_internet_gateway" "igw" {
 resource "aws_nat_gateway" "regional_nat" {
   vpc_id            = aws_vpc.vpc.id
   availability_mode = "regional"
+  depends_on = [ aws_internet_gateway.igw ]
 }
 
 # Create a route for each route table and associate regional NAT Gateway to it
