@@ -235,8 +235,15 @@ def _db_conn():
         raise RuntimeError("psycopg2 not available. Add psycopg2-binary to your Lambda layer/package.")
 
     now = time.time()
-    if _DB_CONN is not None and _DB_CONN.closed == 0 and now < _DB_CONN_REFRESH_AT:
-        return _DB_CONN
+    if _DB_CONN is not None and now < _DB_REFRESH_AT:
+        try:
+            # Validate connectivity with a lightweight query
+            with _DB_CONN.cursor() as test.cur:
+                test.cur.execute("SELECT 1;")
+                cur.fetchone()
+            return _DB_CONN
+        except (psycopg2.OperationalError, psycopg2.InterfaceError) as e:
+            print("DB connection failed health check, refreshing: %s", str(e))
 
     db_host = os.environ["DB_HOST"]
     db_port = int(os.environ.get("DB_PORT", "5432"))
