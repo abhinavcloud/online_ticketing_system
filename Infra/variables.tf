@@ -32,11 +32,13 @@ variable "account_id" {
 variable "master_username" {
     description = "Aurora DB Master Username"
     type = string
+    sensitive = true
 }
 
 variable "master_password" {
     description = "Aurora DB Master Password"
     type = string
+    sensitive = true
 }
 
 
@@ -73,4 +75,5 @@ variable "client_id" {
 variable "client_secret" {
   description = "Cognito User Pool App Client Secret for authentication"
   type        = string
+  sensitive = true
 }
