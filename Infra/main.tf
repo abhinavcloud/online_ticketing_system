@@ -127,7 +127,7 @@ module "APIGateway" {
     reservation_service_name = module.Compute.reservation_service_name
     payment_service_name = module.Compute.payment_service_name
     confirmation_service_name = module.Compute.confirmation_service_name
-    user_pool_arn = module.Authentication.google_user_pool_arn
+    user_pool_arn = module.Authentication.user_pool_arn
 
 }
 
