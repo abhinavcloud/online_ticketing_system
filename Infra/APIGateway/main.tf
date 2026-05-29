@@ -343,7 +343,7 @@ resource "aws_lambda_permission" "apigw_invoke_seat_availability_service" {
 # Create /v1/reserveticket resource, method and integration
 resource "aws_api_gateway_resource" "reserve_ticket_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
-  parent_id   = aws_api_gateway_rest_api.v1_resource.id
+  parent_id   = aws_api_gateway_resource.v1_resource.id
   path_part   = "reserveticket"
 }
 
@@ -382,7 +382,7 @@ resource "aws_lambda_permission" "apigw_invoke_reservation_service" {
 # Create v1/payment resource, method and integration
 resource "aws_api_gateway_resource" "payment_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
-  parent_id   = aws_api_gateway_rest_api.v1_resource.id
+  parent_id   = aws_api_gateway_resource.v1_resource.id
   path_part   = "payment"
 }
 
@@ -422,7 +422,7 @@ resource "aws_lambda_permission" "apigw_invoke_payment_service" {
 # Create v1/booking resource, method and integration
 resource "aws_api_gateway_resource" "booking_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
-  parent_id   = aws_api_gateway_rest_api.v1_resource.id
+  parent_id   = aws_api_gateway_resource.v1_resource.id
   path_part   = "booking"
 }
 
