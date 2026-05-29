@@ -45,7 +45,7 @@ variable "master_password" {
 variable "app_db_user" {
   type        = string
   description = "IAM-enabled Postgres user for application lambdas"
-  default     = "app_user"
+  
 }
 
 variable "notification_email" {
