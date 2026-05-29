@@ -40,7 +40,7 @@ resource "aws_api_gateway_integration" "location_get_integration" {
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = var.browse_service_arn
+  uri                     = "arn:aws:lambda:${var.aws_region}:${var.aws_account_id}:lambda:path/2015-03-31/functions/${var.browse_service_arn}/invocations"
 }
 
 # --------------------------------------------------------------------------------
@@ -66,7 +66,7 @@ resource "aws_api_gateway_integration" "venue_get_integration" {
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = var.browse_service_arn
+  uri                     = "arn:aws:lambda:${var.aws_region}:${var.aws_account_id}:lambda:path/2015-03-31/functions/${var.browse_service_arn}/invocations"
 
 }
 
@@ -93,7 +93,7 @@ resource "aws_api_gateway_integration" "performers_get_integration" {
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = var.browse_service_arn
+  uri                     = "arn:aws:lambda:${var.aws_region}:${var.aws_account_id}:lambda:path/2015-03-31/functions/${var.browse_service_arn}/invocations"
 
 }
 
@@ -120,7 +120,7 @@ resource "aws_api_gateway_integration" "events_get_integration" {
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = var.browse_service_arn
+  uri                     = "arn:aws:lambda:${var.aws_region}:${var.aws_account_id}:lambda:path/2015-03-31/functions/${var.browse_service_arn}/invocations"
 
 }
 
@@ -130,7 +130,7 @@ resource "aws_api_gateway_integration" "events_get_integration" {
 resource "aws_api_gateway_resource" "event_detail_resource" {
   rest_api_id = aws_api_gateway_rest_api.ticketing_api.id
   parent_id   = aws_api_gateway_resource.v1_resource.id
-  path_part   = "event"
+  path_part   = "events"
 }
 
 resource "aws_api_gateway_resource" "event_id_resource" {
@@ -153,7 +153,7 @@ resource "aws_api_gateway_integration" "event_detail_get_integration" {
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = var.browse_service_arn
+  uri                     = "arn:aws:lambda:${var.aws_region}:${var.aws_account_id}:lambda:path/2015-03-31/functions/${var.browse_service_arn}/invocations"
 
 }
 
@@ -212,7 +212,7 @@ resource "aws_api_gateway_integration" "queue_enter_post_integration" {
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = var.queue_service_arn
+  uri                     = "arn:aws:lambda:${var.aws_region}:${var.aws_account_id}:lambda:path/2015-03-31/functions/${var.queue_service_arn}/invocations"
 
 }
 
@@ -240,7 +240,7 @@ resource "aws_api_gateway_integration" "queue_poll_post_integration" {
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = var.queue_service_arn
+  uri                     = "arn:aws:lambda:${var.aws_region}:${var.aws_account_id}:lambda:path/2015-03-31/functions/${var.queue_service_arn}/invocations"
 
 }
 
@@ -268,7 +268,7 @@ resource "aws_api_gateway_integration" "queue_release_post_integration" {
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = var.queue_service_arn
+  uri                     = "arn:aws:lambda:${var.aws_region}:${var.aws_account_id}:lambda:path/2015-03-31/functions/${var.queue_service_arn}/invocations"
 
 }
 
@@ -322,7 +322,7 @@ resource "aws_api_gateway_integration" "event_seats_get_integration" {
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = var.seat_availability_service_arn
+  uri                     = "arn:aws:lambda:${var.aws_region}:${var.aws_account_id}:lambda:path/2015-03-31/functions/${var.seat_availability_service_arn}/invocations"
 
 }
 
@@ -362,7 +362,7 @@ resource "aws_api_gateway_integration" "reserve_ticket_post_integration" {
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = var.reservation_service_arn
+  uri                     = "arn:aws:lambda:${var.aws_region}:${var.aws_account_id}:lambda:path/2015-03-31/functions/${var.reservation_service_arn}/invocations"
 
 }
 
@@ -401,7 +401,7 @@ resource "aws_api_gateway_integration" "payment_post_integration" {
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = var.payment_service_arn
+  uri                     = "arn:aws:lambda:${var.aws_region}:${var.aws_account_id}:lambda:path/2015-03-31/functions/${var.payment_service_arn}/invocations"
 
 }   
 
@@ -441,7 +441,7 @@ resource "aws_api_gateway_integration" "booking_post_integration" {
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = var.confirmation_service_arn
+  uri                     = "arn:aws:lambda:${var.aws_region}:${var.aws_account_id}:lambda:path/2015-03-31/functions/${var.confirmation_service_arn}/invocations"
 
 }
 

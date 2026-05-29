@@ -128,6 +128,8 @@ module "APIGateway" {
     payment_service_name = module.Compute.payment_service_name
     confirmation_service_name = module.Compute.confirmation_service_name
     user_pool_arn = module.Authentication.user_pool_arn
+    aws_account_id = var.account_id
+    aws_region = data.aws_region.current.id
 
 }
 

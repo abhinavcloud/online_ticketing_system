@@ -13,3 +13,6 @@ variable "reservation_service_name" { type = string }
 variable "payment_service_name" { type = string }
 variable "confirmation_service_name" { type = string }
 variable "user_pool_arn" { type = string }
+variable "aws_region" { type = string }
+variable "aws_account_id" { type = string }
+
