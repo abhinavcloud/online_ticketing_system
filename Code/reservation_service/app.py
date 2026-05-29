@@ -224,7 +224,7 @@ def _seatlock_cache():
     region = os.environ.get("APP_REGION") or os.environ.get("AWS_DEFAULT_REGION")
 
     now = time.time()
-    if _SEATLOCK_REDIS is not None and now < _SEATLOCK_REDIS_REFRESH_AT:
+    if _SEATLOCK_REDIS is not None and _SEATLOCK_REDIS.closed == 0 and now < _SEATLOCK_REDIS_REFRESH_AT:
         return _SEATLOCK_REDIS
 
     token = _elasticache_iam_token(user_id=user_id, cache_name=cache_name, region=region)
@@ -275,7 +275,7 @@ def _db_conn():
         raise RuntimeError("psycopg2 not available. Add psycopg2-binary to your Lambda layer/package.")
 
     now = time.time()
-    if _DB_CONN is not None and now < _DB_CONN_REFRESH_AT:
+    if _DB_CONN is not None and _DB_CONN.closed == 0 and now < _DB_CONN_REFRESH_AT:
         return _DB_CONN
 
     db_host = os.environ["DB_HOST"]

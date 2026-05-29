@@ -102,7 +102,7 @@ def _db_conn():
     global _DB_CONN, _DB_REFRESH_AT
 
     now = time.time()
-    if _DB_CONN is not None and now < _DB_REFRESH_AT:
+    if _DB_CONN is not None and _DB_CONN.closed == 0 and now < _DB_REFRESH_AT:
         return _DB_CONN
 
     conn = psycopg2.connect(
