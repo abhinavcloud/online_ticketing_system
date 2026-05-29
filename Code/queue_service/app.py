@@ -243,9 +243,9 @@ def _db_conn():
     if _DB_CONN is not None and now < _DB_REFRESH_AT:
         try:
             # Validate connectivity with a lightweight query
-            with _DB_CONN.cursor() as test.cur:
-                test.cur.execute("SELECT 1;")
-                #cur.fetchone()
+            with _DB_CONN.cursor() as cur:
+                cur.execute("SELECT 1;")
+                cur.fetchone()
             return _DB_CONN
         except (psycopg2.OperationalError, psycopg2.InterfaceError) as e:
             print("DB connection failed health check, refreshing: %s", str(e))
