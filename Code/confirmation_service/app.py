@@ -229,10 +229,11 @@ def _db_conn():
             # Validate connectivity with a lightweight query
             with _DB_CONN.cursor() as test.cur:
                 test.cur.execute("SELECT 1;")
-                cur.fetchone()
+                #cur.fetchone()
             return _DB_CONN
         except (psycopg2.OperationalError, psycopg2.InterfaceError) as e:
             print("DB connection failed health check, refreshing: %s", str(e))
+            _DB_CONN = None  # Force refresh on next attempt
 
     db_host = os.environ["DB_HOST"]
     db_port = int(os.environ.get("DB_PORT", "5432"))
