@@ -340,7 +340,7 @@ data "archive_file" "queue_lambda_zip" {
 
 resource "aws_lambda_function" "queue_service" {
   function_name = "queue-service"
-  description   = "Queue Service: POST /queue/enter"
+  description   = "Queue Service: POST /queue/enter /queue/poll /queue/leave"
   runtime       = "python3.12"
   handler       = "app.handler"
   timeout       = 60
@@ -435,7 +435,7 @@ resource "aws_lambda_layer_version" "seat_availability_deps" {
 
 resource "aws_lambda_function" "seat_availability_service" {
   function_name = "seat-availability-service"
-  description   = "Seat Availability Service: GET /v1/events/{eventId}/seats?category_id=... (read-only)"
+  description   = "Seat Availability Service: GET /v1/events/{eventId}/seats"
   runtime       = "python3.12"
   handler       = "app.handler"
   timeout       = 30
@@ -531,7 +531,7 @@ resource "aws_lambda_layer_version" "reservation_deps" {
 
 resource "aws_lambda_function" "reservation_service" {
   function_name = "reservation-service"
-  description   = "Reservation Service: POST /v1/events/{eventId}/reservations"
+  description   = "Reservation Service: POST /v1/reserveTickets"
   runtime       = "python3.12"
   handler       = "app.handler"
   timeout       = 30
@@ -617,7 +617,7 @@ data "archive_file" "payment_lambda_zip" {
 
 resource "aws_lambda_function" "payment_service" {
   function_name = "payment-service"
-  description   = "payment Service: https://payment-gateway.com/pay?amount=9000&currency=INR&reference=res_123&returnUrl=https://your-frontend.com/payment/return?reservationId=res_123"
+  description   = "v1/payment"
   runtime       = "python3.12"
   handler       = "app.handler"
   timeout       = 30
@@ -674,7 +674,7 @@ resource "aws_lambda_layer_version" "confirmation_deps" {
 
 resource "aws_lambda_function" "confirmation_service" {
   function_name = "confirmation-service"
-  description   = "Confirmation Service: POST /v1/events/{eventId}/reservations"
+  description   = "Confirmation Service: POST /v1/booking"
   runtime       = "python3.12"
   handler       = "app.handler"
   timeout       = 30
