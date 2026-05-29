@@ -386,7 +386,7 @@ environment {
     QUEUE_OVERSELL_FACTOR              = "2"
 
     # Active concurrency limit per event-category
-    QUEUE_MAX_USERS_PER_EVENT_CATEGORY = "1"
+    QUEUE_MAX_USERS_PER_EVENT_CATEGORY = "20"
 
     # Promotion coordination/guardrails (NOT business logic)
     QUEUE_PROMOTION_LOCK_SECONDS = "1"     # short mutex to avoid double promotions
