@@ -1,5 +1,5 @@
 resource "aws_sns_topic" "ticketing_notifications" {
-  name                        = "ticketing-notifications.fifo"
+  name                        = "ticketing-notifications"
   fifo_topic                  = false
 }
 
