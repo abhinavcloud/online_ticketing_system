@@ -2,3 +2,4 @@
 *.bkp
 *.vscode
 *.sql
+create_schema_and_dummy_data.txt
