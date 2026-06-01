@@ -161,3 +161,10 @@ module "Cloudfront" {
   acm_cert = module.Certificate.acm_cert
   
 }
+
+module "Certificate" {
+  source = "./Certificate"
+
+  root_domain = var.root_domain
+
+}
