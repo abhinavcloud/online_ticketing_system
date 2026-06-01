@@ -14,7 +14,12 @@ output "vpc_id" {
     value = aws_vpc.vpc.id
 }
 
-output "vpc_endpoint_sg" {
+output "vpc_endpoint_kms_sg" {
     value = aws_security_group.kms_vpce_sg.id
     
 }
+
+output "vpc_endpoint_sns_sg" {
+    value = aws_security_group.sns_vpce_sg.id
+}
+

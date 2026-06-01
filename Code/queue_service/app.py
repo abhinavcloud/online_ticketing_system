@@ -159,49 +159,49 @@ def _queue_cache():
     _QUEUE_REDIS_REFRESH_AT = now + (14 * 60)
     return client
 
-    def _seat_lock_cache():
-        """Cache B == Seat lock cache (Valkey). Similar to _queue_cache but separate connection and env vars."""
-        global _SEAT_LOCK_REDIS, _SEAT_LOCK_REDIS_REFRESH_AT
+def _seat_lock_cache():
+    """Cache B == Seat lock cache (Valkey). Similar to _queue_cache but separate connection and env vars."""
+    global _SEAT_LOCK_REDIS, _SEAT_LOCK_REDIS_REFRESH_AT
 
-        if redis is None:
-            raise RuntimeError("redis library not available. Add redis to your Lambda layer/package.")
+    if redis is None:
+        raise RuntimeError("redis library not available. Add redis to your Lambda layer/package.")
 
-        endpoint = _env_str("SEAT_LOCK_CACHE_ENDPOINT", required=True)
-        port = int(_env_str("SEAT_LOCK_CACHE_PORT") or "6379")
-        cache_name = _env_str("SEAT_LOCK_CACHE_NAME", required=True)
-        user_id = _env_str("SEAT_LOCK_ELASTICACHE_USER_ID", required=True)
-        region = os.environ.get("APP_REGION") or os.environ.get("AWS_DEFAULT_REGION")
+    endpoint = _env_str("SEAT_LOCK_CACHE_ENDPOINT", required=True)
+    port = int(_env_str("SEAT_LOCK_CACHE_PORT") or "6379")
+    cache_name = _env_str("SEAT_LOCK_CACHE_NAME", required=True)
+    user_id = _env_str("SEAT_LOCK_ELASTICACHE_USER_ID", required=True)
+    region = os.environ.get("APP_REGION") or os.environ.get("AWS_DEFAULT_REGION")
 
-        now = time.time()
-        if _SEAT_LOCK_REDIS is not None and _SEAT_LOCK_REDIS.closed == 0 and now < _SEAT_LOCK_REDIS_REFRESH_AT:
-            return _SEAT_LOCK_REDIS
+    now = time.time()
+    if _SEAT_LOCK_REDIS is not None and _SEAT_LOCK_REDIS.closed == 0 and now < _SEAT_LOCK_REDIS_REFRESH_AT:
+        return _SEAT_LOCK_REDIS
 
-        token = _elasticache_iam_token(user_id=user_id, cache_name=cache_name, region=region)
+    token = _elasticache_iam_token(user_id=user_id, cache_name=cache_name, region=region)
 
-        client = redis.Redis(
-            host=endpoint,
-            port=port,
-            username=user_id,
-            password=token,
-            ssl=True,
-            ssl_cert_reqs=None,
-            decode_responses=True,
-            socket_connect_timeout=2,
-            socket_timeout=2,
-        )
-        client.ping()
+    client = redis.Redis(
+        host=endpoint,
+        port=port,
+        username=user_id,
+        password=token,
+        ssl=True,
+        ssl_cert_reqs=None,
+        decode_responses=True,
+        socket_connect_timeout=2,
+        socket_timeout=2,
+    )
+    client.ping()
 
-        _SEAT_LOCK_REDIS = client
-        _SEAT_LOCK_REDIS_REFRESH_AT = now + (14 * 60)
-        return client
-    
-    def _count_locked_seats(event_id: str, category_id: str) -> int:
-        """Read the locked_count counter written atomically by reservation_service when it creates seat locks. This is used in handle_poll to determine how many seats are currently locked."""
-        """Single GET call - 0(1) regardless of how many seats are locked."""
-        tag = f"{{{event_id}:{category_id}}}"
-        count_key = f"seatlock:{tag}:locked_count"
-        sl = _seatlock_cache()
-        return int(sl.get(count_key) or 0)
+    _SEAT_LOCK_REDIS = client
+    _SEAT_LOCK_REDIS_REFRESH_AT = now + (14 * 60)
+    return client
+
+def _count_locked_seats(event_id: str, category_id: str) -> int:
+    """Read the locked_count counter written atomically by reservation_service when it creates seat locks. This is used in handle_poll to determine how many seats are currently locked."""
+    """Single GET call - 0(1) regardless of how many seats are locked."""
+    tag = f"{{{event_id}:{category_id}}}"
+    count_key = f"seatlock:{tag}:locked_count"
+    sl = _seat_lock_cache()
+    return int(sl.get(count_key) or 0)
 
 
 # ----------------------------
@@ -240,7 +240,7 @@ def _db_conn():
         raise RuntimeError("psycopg2 not available. Add psycopg2-binary to your Lambda layer/package.")
 
     now = time.time()
-    if _DB_CONN is not None and now < _DB_REFRESH_AT:
+    if _DB_CONN is not None and now < _DB_CONN_REFRESH_AT:
         try:
             # Validate connectivity with a lightweight query
             with _DB_CONN.cursor() as cur:

@@ -182,6 +182,7 @@ resource "random_id" "aurora_secret_suffix" {
 
 resource "aws_secretsmanager_secret" "aurora_master_secret" {
   name = "aurora-master-credentials-${random_id.aurora_secret_suffix.hex}"
+  recovery_window_in_days = 0 
 }
 
 #resource "aws_secretsmanager_secret" "aurora_master_secret" {

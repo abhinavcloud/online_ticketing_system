@@ -57,7 +57,8 @@ module "Compute" {
     subnet_group = [module.Network.subnet_01, module.Network.subnet_02, module.Network.subnet_03]
     
     # DB Proxy and Cache ARN
-    db_proxy_id = split(":", module.Database.db_proxy_arn)[6]
+    #db_proxy_id = split(":", module.Database.db_proxy_arn)[6]
+    db_proxy_id = module.Database.db_proxy_resource_id
     browse_cache = module.Cache.serverless_cache_browse
     active_user_lock_cache= module.Cache.serverless_active_user_lock
     seat_lock_cache = module.Cache.serverless_seat_lock
@@ -67,8 +68,8 @@ module "Compute" {
     security_group_id = aws_security_group.lambda_sg.id
     db_proxy_security_group = module.Database.db_proxy_security_group
     elasticache_security_group = module.Cache.elasticache_security_group
-    vpc_endpoint_security_group = module.Network.vpc_endpoint_sg
-
+    kms_vpc_endpoint_security_group = module.Network.vpc_endpoint_kms_sg
+    sns_vpc_endpoint_security_group = module.Network.vpc_endpoint_sns_sh
     
     # DB Proxy Details    
     db_proxy_endpoint = module.Database.db_proxy_endpoint

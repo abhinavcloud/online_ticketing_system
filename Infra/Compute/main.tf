@@ -171,14 +171,24 @@ resource "aws_vpc_security_group_egress_rule" "elasticache_sg_egress_rule" {
   to_port     = 6379
 }
 
-# Create an Egress rule for Lambda Security Group to VPC Endpoint
+# Create an Egress rule for Lambda Security Group to KMS VPC Endpoint
 resource "aws_vpc_security_group_egress_rule" "lambda_to_kms_vpce_443" {
   security_group_id            = var.security_group_id
   ip_protocol                  = "tcp"
   from_port                    = 443
   to_port                      = 443
-  referenced_security_group_id = var.vpc_endpoint_security_group
+  referenced_security_group_id = var.kms_vpc_endpoint_security_group
   description                  = "Allow Lambda to call KMS via VPCE on 443"
+}
+
+# Create an Egress rule for Lambda Security Group to SNS VPC Endpoint
+resource "aws_vpc_security_group_egress_rule" "lambda_to_sns_vpce_443" {
+  security_group_id            = var.security_group_id
+  ip_protocol                  = "tcp"
+  from_port                    = 443
+  to_port                      = 443
+  referenced_security_group_id = var.sns_vpc_endpoint_security_group
+  description                  = "Allow Lambda to call SNS via VPCE on 443"
 }
 
 
@@ -601,7 +611,7 @@ resource "aws_lambda_function" "reservation_service" {
 
   tags = {
     Service = "ticketing"
-    Name    = "payment-service"
+    Name    = "reservation-service"
   }
 }
 
@@ -647,7 +657,7 @@ resource "aws_lambda_function" "payment_service" {
 
   tags = {
     Service = "ticketing"
-    Name    = "reservation-service"
+    Name    = "payment-service"
   }
 }
 
