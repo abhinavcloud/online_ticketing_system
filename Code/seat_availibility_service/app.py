@@ -358,9 +358,7 @@ def _fetch_seats_from_db(event_id: str, category_id: str, limit: int) -> List[Di
             for r in rows:
                 out.append({
                     "seatId": r[0],
-                    "row": r[1],
-                    "number": r[2],
-                    "status": r[3],  # AVAILABLE or BOOKED (DB truth)
+                    "status": r[1],  # AVAILABLE or BOOKED (DB truth)
                 })
             return out
         except psycopg2.OperationalError:
