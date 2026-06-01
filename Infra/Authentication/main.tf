@@ -5,7 +5,7 @@ resource "aws_cognito_identity_provider" "google_provider" {
   provider_type = "Google"
 
   provider_details = {
-    authorize_scopes = "email"
+    authorize_scopes = "openid email profile"
     client_id        = var.client_id
     client_secret    = var.client_secret
   }
@@ -34,10 +34,10 @@ resource "aws_cognito_user_pool_client" "google_client" {
   allowed_oauth_scopes                 = ["email", "openid"]
 
   # Callback URLs for Hosted UI (after successful authentication)
-  callback_urls                        = ["https://${var.root_domain}", "http://localhost:3000"]
+  callback_urls                        = ["https://${var.root_domain}/callback.html", "http://localhost:3000/callback.html"]
   # Logout URLs for Hosted UI (after sign out)
-  logout_urls                          = ["https://${var.root_domain}", "http://localhost:3000"]
-  
+  logout_urls                          = ["https://${var.root_domain}/index.html", "http://localhost:3000/index.html"]
+  default_redirect_uri = "https://${var.root_domain}/callback.html"
 
   supported_identity_providers         = ["Google"]
 
