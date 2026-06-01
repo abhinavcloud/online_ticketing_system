@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Booking Success</title>
+  <link rel="stylesheet" href="assets/css/base.css" />
+  <link rel="stylesheet" href="assets/css/responsive.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="site-header">
+      <div class="inner">
+        <a class="brand" href="index.html">
+          <span class="brand-badge" aria-hidden="true"></span>
+          <span>Online Ticketing System</span>
+        </a>
+        <nav class="nav-links">
+          <a class="nav-link" href="index.html">Home</a>
+          <a class="nav-link" href="locations.html">Locations</a>
+          <a class="nav-link" href="events.html">Events</a>
+          <span class="badge hidden" data-auth="true">Signed in as <span data-auth-profile class="muted">User</span></span>
+          <a class="nav-link" href="login.html" data-guest="true" data-action="login">Login</a>
+          <a class="nav-link hidden" href="#" data-auth="true" data-action="logout">Logout</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="main">
+<div class="container">
+  <div class="stepper">
+    <div class="step">Queue</div>
+    <div class="step">Seats</div>
+    <div class="step">Reservation</div>
+    <div class="step">Payment</div>
+    <div class="step">Confirmation</div>
+    <div class="step active">Success</div>
+  </div>
+
+  <div class="checkout-layout">
+    <section class="panel section">
+      <span class="badge success">Booking Confirmed</span>
+      <h1 class="hero-title mt-2">Your booking is complete</h1>
+      <p class="hero-subtitle">This page is shown only after confirmation service succeeds and durable booking is written to the backend.</p>
+      <div id="successContent"></div>
+      <div class="button-row mt-3">
+        <a class="primary-btn" href="index.html">Return to home</a>
+        <a class="secondary-btn" href="events.html">Browse more events</a>
+      </div>
+    </section>
+
+    <aside id="successSummary"></aside>
+  </div>
+</div>
+</main>
+
+    <footer class="site-footer">
+      <div class="inner">
+        <div class="muted">Static frontend demo for backend showcase</div>
+        <div class="muted">Hosted with S3 + CloudFront</div>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="assets/js/pages/booking-success.js"></script>
+</body>
+</html>

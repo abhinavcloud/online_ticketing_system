@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Locations</title>
+  <link rel="stylesheet" href="assets/css/base.css" />
+  <link rel="stylesheet" href="assets/css/responsive.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="site-header">
+      <div class="inner">
+        <a class="brand" href="index.html">
+          <span class="brand-badge" aria-hidden="true"></span>
+          <span>Online Ticketing System</span>
+        </a>
+        <nav class="nav-links">
+          <a class="nav-link" href="index.html">Home</a>
+          <a class="nav-link" href="locations.html">Locations</a>
+          <a class="nav-link" href="events.html">Events</a>
+          <span class="badge hidden" data-auth="true">Signed in as <span data-auth-profile class="muted">User</span></span>
+          <a class="nav-link" href="login.html" data-guest="true" data-action="login">Login</a>
+          <a class="nav-link hidden" href="#" data-auth="true" data-action="logout">Logout</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="main">
+<div class="container">
+  <section class="section panel">
+    <div class="section-header">
+      <div>
+        <span class="badge brand">Public Browse</span>
+        <h1 class="section-title mt-2">Locations</h1>
+        <p class="section-subtitle mb-0">Choose a location to open the event discovery journey.</p>
+      </div>
+    </div>
+    <div id="locationsGrid" class="locations-grid"></div>
+  </section>
+</div>
+</main>
+
+    <footer class="site-footer">
+      <div class="inner">
+        <div class="muted">Static frontend demo for backend showcase</div>
+        <div class="muted">Hosted with S3 + CloudFront</div>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="assets/js/pages/locations.js"></script>
+</body>
+</html>

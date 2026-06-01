@@ -1,0 +1,65 @@
+@media (max-width: 1100px) {
+  .hero,
+  .content-layout,
+  .checkout-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar-sticky {
+    position: static;
+  }
+
+  .event-grid,
+  .locations-grid,
+  .ticket-grid,
+  .state-grid,
+  .grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .site-header .inner,
+  .site-footer .inner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .nav-links {
+    justify-content: space-between;
+  }
+
+  .hero-title {
+    font-size: 2.3rem;
+  }
+
+  .event-grid,
+  .locations-grid,
+  .ticket-grid,
+  .state-grid,
+  .grid-2,
+  .grid-3,
+  .metrics-grid,
+  .stepper {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-row,
+  .cta-row,
+  .button-row,
+  .inline-actions {
+    flex-direction: column;
+  }
+
+  .nav-link,
+  .ghost-btn,
+  .primary-btn,
+  .secondary-btn,
+  .danger-btn {
+    width: 100%;
+  }
+
+  .seat-grid {
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  }
+}
