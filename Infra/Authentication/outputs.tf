@@ -6,7 +6,7 @@ output "user_pool_arn" {
 }
 
 output "cognito_domain" {
-    value = aws_cognito_user_pool_domain.google_domain.domain
+     value = "https://${aws_cognito_user_pool_domain.google_domain.domain}.auth.${data.aws_region.current.region}.amazoncognito.com"
     description = "Cognito User Pool Domain for Google Sign In (used in Hosted UI and as the application domain for Oauth)"
 }
 
@@ -20,7 +20,16 @@ output "redirect_uris" {
     description = "List of allowed redirect URIs for the Cognito User Pool Client (used in Oauth flows)"
 }
 
+output "logout_uris" {
+    value = aws_cognito_user_pool_client.google_client.logout_urls
+    description = "List of allowed Logout URIs for the Cognito User Pool Client (used in Oauth flows)"
+}
+
 output "google_authorized_redirect_uri" {
     value = "https://${aws_cognito_user_pool_domain.google_domain.domain}.auth.${data.aws_region.current.region}.amazoncognito.com/oauth2/idpresponse"
     description = "The redirect URI to be registered with Google for Oauth (Cognito Hosted UI callback URL for Google Sign In)"
+}
+
+output "cognito_hosted_ui_base_url" {
+  value = "https://${aws_cognito_user_pool_domain.google_domain.domain}.auth.${data.aws_region.current.name}.amazoncognito.com"
 }

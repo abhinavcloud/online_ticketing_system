@@ -4,6 +4,15 @@ description: This is a reusable workflow designed to initialise terraform and ru
 
 on:
   workflow_dispatch:
+    inputs:
+        enable_custom_domain:
+          description : "Enable custom domain & ACM Certificate on Cloud front. (True only after DNS validation)"
+          required: false
+          default: "false"
+          type: choice
+          options:
+            - "true"
+            - "false"
 
 
 
@@ -28,6 +37,8 @@ jobs:
           TF_VAR_account_id: ${{secrets.ACCOUNT_ID}}
           TF_VAR_client_id: ${{secrets.CLIENT_ID}}
           TF_VAR_client_secret: ${{secrets.CLIENT_SECRET}}
+          TF_VAR_domain_name: ${{secrets.domain_name}}
+          TF_VAR_root_domain: ${{secrets.root_domain}} 
         
         steps:
 

@@ -77,3 +77,10 @@ variable "client_secret" {
   type        = string
   sensitive = true
 }
+
+
+variable "enable_custom_domain" {
+  description = "Enable custom domain + ACM cert on CloudFront"
+  type        = bool
+  default     = false
+}

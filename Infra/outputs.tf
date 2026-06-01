@@ -1,11 +1,32 @@
-output "db_cluster_endpoint" {
-  value = module.Database.db_cluster_endpoint
+output "APIinvokeURL" {
+    value = module.APIGateway.APIinvokeURL
 }
 
-output "db_cluster_port" {
-  value = module.Database.db_cluster_port
+output "cognito_domain" {
+  value = module.Authentication.cognito_domain
 }
 
-output "db_name" {
-  value = module.Database.db_name
+output "cognito_client_id" {
+  value = module.Authentication.cognito_client_id
+}
+
+
+output "redirect_uris" {
+    value = module.Authentication.redirect_uris
+    description = "List of allowed redirect URIs for the Cognito User Pool Client (used in Oauth flows)"
+}
+
+output "logout_uris" {
+    value = module.Authentication.logout_uris
+    description = "List of allowed Logout URIs for the Cognito User Pool Client (used in Oauth flows)"
+}
+
+output "distribution_id" {
+  value = module.Cloudfront.distribution_id
+  description = "Cloudfront distribution id for cache invalidation"
+}
+
+output "aws_region" {
+  value = data.aws_region.current.id
+  description = "AWS Region on which the application and infra is deployed"
 }

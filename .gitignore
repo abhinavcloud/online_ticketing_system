@@ -4,3 +4,4 @@
 *.sql
 create_schema_and_dummy_data.txt
 connection.txt
+config.js
