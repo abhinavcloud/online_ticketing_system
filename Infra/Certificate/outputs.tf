@@ -4,5 +4,5 @@ output "acm_dns_validation" {
 }
 
 output "acm_cert" {
-    value = aws_acm_certificate.cfonline_ticket_system_certcert.arn
+    value = aws_acm_certificate.online_ticket_system_cert.arn
 }
