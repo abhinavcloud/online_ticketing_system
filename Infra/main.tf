@@ -156,7 +156,7 @@ module "Cloudfront" {
   bucket_arn                  = module.Storage.bucket_arn
   bucket_regional_domain_name = module.Storage.bucket_regional_domain_name
   base_url                    = module.APIGateway.APIinvokeURL
-  root_domain = var.root_domain
+  root_domain                   = var.root_domain
   enable_custom_domain = var.enable_custom_domain 
   acm_cert = module.Certificate.acm_cert
   
@@ -165,6 +165,6 @@ module "Cloudfront" {
 module "Certificate" {
   source = "./Certificate"
 
-  root_domain = var.root_domain
+  domain_name = root_domain
 
 }

@@ -16,3 +16,5 @@ resource "aws_acm_certificate" "online_ticket_system_cert" {
   }
 }
 
+
+
