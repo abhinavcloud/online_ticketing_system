@@ -63,7 +63,6 @@ variable "app_name" {
 variable "root_domain" {
   description = "Root domain for the application (used in Cognito callback URLs)"
   type        = string
-  default     = "abhinav-cloud.com"
 }
 
 
