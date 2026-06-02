@@ -119,7 +119,7 @@ jobs:
             - name: Generate frontend config.js from Terraform outputs
               run: |
                   cat > ../Code/frontend/assets/js/config.js <<EOF
-                  window.APP_CONFIG = {
+                  export const APP_CONFIG = {
                     appName: 'Online Ticketing System',
                     apiBaseUrl:  "${{ secrets.DOMAIN_URL }}",
                     region: "${{ steps.tf_out.outputs.aws_region }}",
