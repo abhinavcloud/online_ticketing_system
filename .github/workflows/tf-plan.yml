@@ -33,6 +33,7 @@ jobs:
         env:
           TF_VAR_master_username: ${{secrets.AURORA_USERNAME}}
           TF_VAR_master_password: ${{secrets.AURORA_PASSWORD}}
+          TF_VAR_app_db_user: ${{secrets.AURORA_USERNAME}}
           TF_VAR_account_id: ${{secrets.ACCOUNT_ID}}
           TF_VAR_client_id: ${{secrets.CLIENT_ID}}
           TF_VAR_client_secret: ${{secrets.CLIENT_SECRET}}
