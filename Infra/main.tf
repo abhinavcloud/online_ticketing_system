@@ -23,7 +23,7 @@ module "Network" {
     source = "./Network/"
     common_tags = local.common_tags
     vpc_cidr    = var.vpc_cidr
-    region = data.aws_region.current.id
+    region = data.aws_region.current.region
     availability_zones   = data.aws_availability_zones.az.names
     referenced_security_group_id = aws_security_group.lambda_sg.id
 
@@ -36,7 +36,7 @@ module "Database" {
     availability_zones   = data.aws_availability_zones.az.names
     subnet_group = [module.Network.subnet_01, module.Network.subnet_02, module.Network.subnet_03]
     vpc_id = module.Network.vpc_id
-    region = data.aws_region.current.id
+    region = data.aws_region.current.region
     account_id = var.account_id
     master_username = var.master_username
     master_password = var.master_password
@@ -51,7 +51,7 @@ module "Compute" {
     source = "./Compute/"
     
     #Network
-    region = data.aws_region.current.id
+    region = data.aws_region.current.region
     account_id = var.account_id
     vpc_id = module.Network.vpc_id
     subnet_group = [module.Network.subnet_01, module.Network.subnet_02, module.Network.subnet_03]
@@ -69,7 +69,7 @@ module "Compute" {
     db_proxy_security_group = module.Database.db_proxy_security_group
     elasticache_security_group = module.Cache.elasticache_security_group
     kms_vpc_endpoint_security_group = module.Network.vpc_endpoint_kms_sg
-    sns_vpc_endpoint_security_group = module.Network.vpc_endpoint_sns_sh
+    sns_vpc_endpoint_security_group = module.Network.vpc_endpoint_sns_sg
     
     # DB Proxy Details    
     db_proxy_endpoint = module.Database.db_proxy_endpoint

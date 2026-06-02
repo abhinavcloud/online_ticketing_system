@@ -144,14 +144,6 @@ resource "aws_iam_role_policy_attachment" "lambda_notification_access" {
 }
   
 
-# Create an Ingress rule for Lambda Security Group
-#resource "aws_vpc_security_group_ingress_rule" "rds_proxy_sg_ingress_rule" {
-#  security_group_id = security_group_id
-#  referenced_security_group_id = var.referenced_security_group_id
-#  from_port         = 5432
-#  ip_protocol       = "tcp"
-#  to_port           = 5432
-#}
 
 # Creating an Egress rule from Lambda security group to RDS Proxy
 resource "aws_vpc_security_group_egress_rule" "lambda_sg_egress_rds_proxy_rule" {
