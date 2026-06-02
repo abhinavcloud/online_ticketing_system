@@ -37,7 +37,8 @@ jobs:
           TF_VAR_account_id: ${{secrets.ACCOUNT_ID}}
           TF_VAR_client_id: ${{secrets.CLIENT_ID}}
           TF_VAR_client_secret: ${{secrets.CLIENT_SECRET}}
-          TF_VAR_root_domain: ${{secrets.root_domain}} # Need to create this secret once the domain is bought
+          TF_VAR_root_domain: ${{secrets.root_domain}} # example.com
+          TF_VAR_domain_url: ${{ secrets.DOMAIN_URL}} # https://example.com
 
         steps:
 

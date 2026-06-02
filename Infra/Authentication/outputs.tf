@@ -16,12 +16,12 @@ output "cognito_client_id" {
 }
 
 output "redirect_uris" {
-    value = aws_cognito_user_pool_client.google_client.callback_urls
+    value = aws_cognito_user_pool_client.google_client.callback_urls[0]
     description = "List of allowed redirect URIs for the Cognito User Pool Client (used in Oauth flows)"
 }
 
 output "logout_uris" {
-    value = aws_cognito_user_pool_client.google_client.logout_urls
+    value = aws_cognito_user_pool_client.google_client.logout_urls[0]
     description = "List of allowed Logout URIs for the Cognito User Pool Client (used in Oauth flows)"
 }
 
