@@ -85,6 +85,7 @@ jobs:
                 if-no-files-found: error
 
             - name: terraform-apply
+              id: terraform-apply
               run: terraform apply -auto-approve tfplan
 
             - name: Export Terraform outputs as step outputs
