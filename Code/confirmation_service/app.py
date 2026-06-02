@@ -224,7 +224,7 @@ def _db_conn():
         raise RuntimeError("psycopg2 not available.")
 
     now = time.time()
-    if _DB_CONN is not None and now < _DB_REFRESH_AT:
+    if _DB_CONN is not None and now < _DB_CONN_REFRESH_AT:
         try:
             # Validate connectivity with a lightweight query
             with _DB_CONN.cursor() as cur:
