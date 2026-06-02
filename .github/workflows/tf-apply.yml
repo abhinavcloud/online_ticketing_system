@@ -58,12 +58,12 @@ jobs:
 
             - name: terraform-init
               run: | 
-                  terraform init \ 
-                    -backend-config="bucket=${{secrets.state_bucket}}" \ 
-                    -backend-config="key=${{secrets.state_bucket_key}}" \ 
-                    -backend-config="region=${{secrets.state_bucket_region}}" \ 
+                  terraform init \
+                    -backend-config="bucket=${{secrets.state_bucket}}" \
+                    -backend-config="key=${{secrets.state_bucket_key}}" \
+                    -backend-config="region=${{secrets.state_bucket_region}}" \
                     -backend-config="use_lockfile=true" \
-                    -backend-config="encrypt=true" 
+                    -backend-config="encrypt=true"
 
             #- name: terraform-lock-release
             #  run: terraform force-unlock -force ee814eb9-1e56-c848-ddce-efc7cff80ae8
