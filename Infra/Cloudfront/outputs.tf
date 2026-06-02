@@ -4,7 +4,7 @@ output "cloudfront_domain_name" {
 }
 
 output "distribution_id" {
-  value       = aws_cloudfront_distribution.site.id
+  value       = aws_cloudfront_distribution.site_ticketing.id
   description = "CloudFront distribution id (use in CI for invalidations)"
 }
 

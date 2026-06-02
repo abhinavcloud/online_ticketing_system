@@ -32,7 +32,7 @@ resource "aws_cloudfront_origin_access_control" "site_oac_ticketing" {
   signing_protocol                  = "sigv4"
 }
 
-resource "aws_cloudfront_distribution" "site_oac_ticketing" {
+resource "aws_cloudfront_distribution" "site_ticketing" {
   enabled             = true
   default_root_object = "index.html"
   comment             = "CloudFront for online ticketing system frontend and API proxy"
@@ -146,13 +146,13 @@ data "aws_iam_policy_document" "site_bucket_policy" {
       test     = "StringEquals"
       variable = "AWS:SourceArn"
       values = [
-        "arn:aws:cloudfront::${data.aws_caller_identity.current.account_id}:distribution/${aws_cloudfront_distribution.site_oac_ticketing.id}"
+        "arn:aws:cloudfront::${data.aws_caller_identity.current.account_id}:distribution/${aws_cloudfront_distribution.site_ticketing.id}"
       ]
     }
   }
 }
 
-resource "aws_s3_bucket_policy" "site_oac_ticketing" {
+resource "aws_s3_bucket_policy" "site_ticketing" {
   bucket = var.bucket_name
   policy = data.aws_iam_policy_document.site_bucket_policy.json
 }
