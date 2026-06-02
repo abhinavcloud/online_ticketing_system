@@ -64,8 +64,8 @@ jobs:
                     -backend-config="use_lockfile=true" \
                     -backend-config="encrypt=true"
 
-            #- name: terraform-lock-release
-            #  run: terraform force-unlock -force ee814eb9-1e56-c848-ddce-efc7cff80ae8
+            - name: terraform-lock-release
+              run: terraform force-unlock -force b253094c-a41d-d6fe-ffb8-0d43ef1a53a6
 
             - name: terraform-plan
               id: plan
