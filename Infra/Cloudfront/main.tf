@@ -24,8 +24,8 @@ locals {
 }
 
 
-resource "aws_cloudfront_origin_access_control" "site_oac" {
-  name                              = "shorturl-site-oac"
+resource "aws_cloudfront_origin_access_control" "site_oac_ticketing" {
+  name                              = "ticketing-site-oac"
   description                       = "OAC for private S3 origin"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
