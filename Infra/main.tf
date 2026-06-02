@@ -165,6 +165,6 @@ module "Cloudfront" {
 module "Certificate" {
   source = "./Certificate"
 
-  domain_name = root_domain
+  root_domain = var. root_domain
 
 }
