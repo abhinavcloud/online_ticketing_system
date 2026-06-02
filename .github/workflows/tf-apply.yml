@@ -101,7 +101,7 @@ jobs:
                 COGNITO_DOMAIN=$(echo "$TF_OUT" | jq -r '.cognito_domain.value')
                 CLIENT_ID=$(echo "$TF_OUT" | jq -r '.cognito_client_id.value')
                 REDIRECT_URI=$(echo "$TF_OUT" | jq -r '.redirect_uris.value')
-                LOGOUT_URI= $(echo "$TF_OUT" | jq -r '.logout_uris.value')
+                LOGOUT_URI=$(echo "$TF_OUT" | jq -r '.logout_uris.value')
                 DISTRIBUTION_ID=$(echo "$TF_OUT" | jq -r '.distribution_id.value')
                 AWS_REGION=$(echo "$TF_OUT" | jq -r '.aws_region.value')
 
@@ -109,9 +109,9 @@ jobs:
                   echo "cognito_domain=$COGNITO_DOMAIN"
                   echo "client_id=$CLIENT_ID"
                   echo "redirect_uri=$REDIRECT_URI"
-                  echo "logout_uri" = $LOGOUT_URI"
+                  echo "logout_uri=$LOGOUT_URI"
                   echo "distribution_id=$DISTRIBUTION_ID"
-                  echo "aws_region"=$AWS_REGION
+                  echo "aws_region=$AWS_REGION"
                 } >> "$GITHUB_OUTPUT"
 
 
