@@ -1,6 +1,6 @@
-variable "db_proxy_id" {
+variable "db_cluster_id" {
     type = string
-    description = "The id of the db proxy arn"
+    description = "The id of the aurora cluster arn"
 
 }
 
@@ -47,9 +47,9 @@ variable "security_group_id" {
     description = "Lambda security group id"
 }
 
-variable "db_proxy_security_group" {
+variable "db_cluster_security_group" {
     type = string
-    description = "RDS Proxy Security Group"
+    description = "Aurora Security Group"
 }
 
 variable "elasticache_security_group" {
@@ -63,7 +63,7 @@ variable "subnet_group" {
 }
 
 
-variable "db_proxy_endpoint" {
+variable "db_cluster_endpoint" {
   type        = string
   description = "RDS Proxy endpoint hostname"
 }
@@ -132,3 +132,4 @@ variable "seat_lock_cache_endpoint" { type = string }
 variable "seat_lock_cache_port" {type = number}
 variable "seat_lock_cache_name" {type = string}
 variable "notification_topic_arn" { type = string}
+variable "secret_manager_access_policy" {type = string}

@@ -56,9 +56,7 @@ module "Compute" {
     vpc_id = module.Network.vpc_id
     subnet_group = [module.Network.subnet_01, module.Network.subnet_02, module.Network.subnet_03]
     
-    # DB Proxy and Cache ARN
-    #db_proxy_id = split(":", module.Database.db_proxy_arn)[6]
-    db_proxy_id = module.Database.db_proxy_resource_id
+    # Cache ARN
     browse_cache = module.Cache.serverless_cache_browse
     active_user_lock_cache= module.Cache.serverless_active_user_lock
     seat_lock_cache = module.Cache.serverless_seat_lock
@@ -66,13 +64,14 @@ module "Compute" {
     
     # Security Groups
     security_group_id = aws_security_group.lambda_sg.id
-    db_proxy_security_group = module.Database.db_proxy_security_group
+    db_cluster_security_group = module.Database.db_cluster_security_group
     elasticache_security_group = module.Cache.elasticache_security_group
     kms_vpc_endpoint_security_group = module.Network.vpc_endpoint_kms_sg
     sns_vpc_endpoint_security_group = module.Network.vpc_endpoint_sns_sg
     
-    # DB Proxy Details    
-    db_proxy_endpoint = module.Database.db_proxy_endpoint
+    # DB Cluster Details
+    db_cluster_id = module.Database.db_cluster_resource_id    
+    db_cluster_endpoint = module.Database.db_cluster_endpoint
     db_port           = module.Database.db_port
     db_name           = module.Database.db_name
     db_user           = var.app_db_user   # define in Infra/variables.tf
@@ -98,6 +97,10 @@ module "Compute" {
 
     #Notification ARN
     notification_topic_arn = module.Notification.ticketing_notifications_topic_arn
+
+    #Secret Manager Policy ARN
+    secret_manager_access_policy = module.Database.secret_manager_access_policy
+    
   
 }
 

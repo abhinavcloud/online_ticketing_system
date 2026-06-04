@@ -83,7 +83,7 @@ def _safe_int(s: Optional[str], default: int) -> int:
 
 
 # ----------------------------
-# DB: IAM auth via RDS Proxy
+# DB: IAM auth via Aurora Cluster
 # ----------------------------
 
 def _db_auth_token() -> str:

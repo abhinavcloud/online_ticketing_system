@@ -41,11 +41,11 @@ _QUEUE_REDIS_REFRESH_AT = 0.0
 _SEAT_LOCK_REDIS = None
 _SEAT_LOCK_REDIS_REFRESH_AT = 0.0
 
-# DB connection (Aurora via RDS Proxy)
+# DB connection (Aurora via Aurora Cluster)
 _DB_CONN = None
 _DB_CONN_REFRESH_AT = 0.0
 
-# RDS IAM token cache (used as password when connecting to RDS Proxy)
+# RDS IAM token cache (used as password when connecting to Aurora Cluster)
 _RDS_IAM_TOKEN = None
 _RDS_IAM_TOKEN_REFRESH_AT = 0.0
 
@@ -205,10 +205,10 @@ def _count_locked_seats(event_id: str, category_id: str) -> int:
 
 
 # ----------------------------
-# RDS Proxy + IAM DB Authentication (token-as-password)
+# Aurora Cluster + IAM DB Authentication (token-as-password)
 # ----------------------------
 def _rds_iam_token(host: str, port: int, user: str, region: str) -> str:
-    """Generate IAM DB auth token for RDS Proxy; cache & refresh before expiry."""
+    """Generate IAM DB auth token for Aurora Cluster; cache & refresh before expiry."""
     global _RDS_IAM_TOKEN, _RDS_IAM_TOKEN_REFRESH_AT
 
     now = time.time()
@@ -233,7 +233,7 @@ def _rds_iam_token(host: str, port: int, user: str, region: str) -> str:
 # CHANGED: removed SELECT 1 health check from warm path; reconnect on OperationalError
 #          is handled in _available_seats_from_db instead.
 def _db_conn():
-    """psycopg2 connection to Aurora via RDS Proxy using IAM auth token."""
+    """psycopg2 connection to Aurora via Aurora Cluster using IAM auth token."""
     global _DB_CONN, _DB_CONN_REFRESH_AT
 
     if psycopg2 is None:
@@ -251,7 +251,7 @@ def _db_conn():
             print("DB connection failed health check, refreshing: %s", str(e))
             _DB_CONN = None  # Force refresh on next attempt
 
-    db_host = os.environ["DB_HOST"]  # RDS Proxy endpoint
+    db_host = os.environ["DB_HOST"]  # Aurora Cluster endpoint
     db_port = int(os.environ.get("DB_PORT", "5432"))
     db_name = os.environ["DB_NAME"]
     db_user = os.environ["DB_USER"]
@@ -637,7 +637,7 @@ def handle_poll(event, context):
     # Promotion computed from 3 sources:
     #   - active_count from Cache A (Queue cache)
     #   - locked_seats from Cache B
-    #   - available_seats from DB (via RDS Proxy IAM auth)
+    #   - available_seats from DB (via Aurora Cluster IAM auth)
     if max_active > 0:
         lock_val = str(uuid.uuid4())
         got_lock = bool(q.set(promote_lock_key, lock_val, nx=True, ex=lock_seconds))
