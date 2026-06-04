@@ -76,7 +76,14 @@ export const api = {
 
   getEvents({ locationId, venueId, performerId, page = 1, pageSize = APP_CONFIG.browsePageSize } = {}) {
     return request('/v1/events', {
-      query: dualCaseParams({ locationId, venueId, performerId, page, pageSize, page_size: pageSize })
+      query: {
+        location: locationId,
+        venue: venueId,
+        performer: performerId,
+        page,
+        pageSize,
+        page_size: pageSize
+      }
     });
   },
 
