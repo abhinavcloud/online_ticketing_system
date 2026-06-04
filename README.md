@@ -35,7 +35,7 @@ This project is a cloud-native online ticketing platform designed for high-deman
 
 The core design principle is a strict separation between long-lived truth and short-lived coordination. The database is the source of truth for only two seat states: `AVAILABLE` and `BOOKED`. Temporary holds are not stored in the database. Seat locks are maintained entirely in cache with TTL. This allows abandoned flows to expire naturally without requiring cleanup jobs to revert database state. The result is a design where cache controls short-lived reservation windows and the database records only durable business outcomes.
 
-The platform is implemented on AWS using a serverless-first model. Lambda functions host business services. Aurora PostgreSQL stores durable state. RDS Proxy is used for database connectivity with IAM authentication. ElastiCache Serverless for Valkey is used for queue state, browse caching, and seat lock state. API Gateway REST APIs expose the endpoints. Cognito secures user-facing APIs. KMS is used for signing and verifying the booking token issued by the queue service. Terraform is used to provision and manage the infrastructure.
+The platform is implemented on AWS using a serverless-first model. Lambda functions host business services. Aurora PostgreSQL stores durable state. ElastiCache Serverless for Valkey is used for queue state, browse caching, and seat lock state. API Gateway REST APIs expose the endpoints. Cognito secures user-facing APIs. KMS is used for signing and verifying the booking token issued by the queue service. Terraform is used to provision and manage the infrastructure.
 
 This repository is not a toy booking example. It is designed around the practical problems that appear in real ticketing systems: concurrent seat requests, queue admission, replay safety, reservation expiry, cache-only lock semantics, and delayed payment confirmation.
 
@@ -266,10 +266,6 @@ Aurora PostgreSQL stores all durable state:
 - reservation audit
 - tickets
 
-### RDS Proxy
-
-All Lambdas that need database access connect through RDS Proxy using IAM authentication. This reduces connection churn and avoids storing DB passwords.
-
 ### ElastiCache Serverless for Valkey
 
 The project uses separate cache responsibilities.
@@ -296,7 +292,7 @@ Infrastructure is managed using Terraform modules for networking, database, cach
 
 ## Browse Service
 
-Browse service is the entry point for discovery. It serves locations, venues, performers, events, and event detail payloads. It uses Aurora PostgreSQL through RDS Proxy and optionally caches responses in Valkey. Browse is read-only. It does not know anything about queue admission or locks.
+Browse service is the entry point for discovery. It serves locations, venues, performers, events, and event detail payloads. It uses Aurora PostgreSQL optionally caches responses in Valkey. Browse is read-only. It does not know anything about queue admission or locks.
 
 The service uses two layers of caching:
 - local in-memory warm Lambda cache
@@ -664,7 +660,7 @@ Queue signs booking tokens using KMS. Reservation and Confirmation verify those 
 
 ### Database authentication
 
-Lambdas connect to RDS Proxy using IAM DB auth tokens. No DB password is embedded in code.
+Lambdas connect to Aurora Serveless Cluster via IAM Authentication. No secrets passwords are required.
 
 ### Cache authentication
 
@@ -672,7 +668,7 @@ Valkey uses IAM authentication with short-lived signed tokens and TLS.
 
 ### VPC isolation
 
-Lambdas run in private subnets and access Aurora, RDS Proxy, and Valkey through VPC networking and security groups.
+Lambdas run in private subnets and access Aurora and Valkey through VPC networking and security groups.
 
 ---
 
@@ -728,7 +724,7 @@ The deployment order should be treated as intentional.
 Create VPC, private subnets, route tables, security groups, NAT where required, and interface endpoints for KMS if that is part of the design.
 
 ### Step 2 Provision database
-Create Aurora, RDS Proxy, DB subnet groups, and enable IAM DB authentication.
+Create Aurora, DB subnet groups, and enable IAM DB authentication.
 
 ### Step 3 Provision caches
 Create:
@@ -764,7 +760,6 @@ Test:
 
 These services are not intended to be fully simulated with plain local mocks because the important behavior depends on:
 - KMS verify and sign
-- RDS Proxy IAM tokens
 - Valkey IAM auth
 - REST API Gateway event shape
 - Cognito authorizer claims
