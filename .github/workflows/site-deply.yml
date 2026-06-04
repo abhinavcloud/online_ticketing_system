@@ -1,0 +1,51 @@
+name: Terraform Plan and Apply
+
+description: This is a reusable workflow designed to initialise terraform and run terraform plan and upload the plan as an artifact
+
+on:
+  workflow_dispatch:
+
+
+permissions:
+  id-token: write
+  contents: read 
+
+defaults:
+  run:
+    working-directory: ./Code/frontend
+
+
+
+jobs:
+    terraform-plan-apply:
+        runs-on: ubuntu-latest
+
+       
+
+        steps:
+
+            - name: Checkout-code
+              uses: actions/checkout@v4
+
+            - name: Setup-aws
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                role-to-assume: ${{secrets.AWS_ARN}}
+                aws-region: ap-south-1
+
+  
+            - name: upload website code in S3 bucket
+              if: ${{steps.terraform-apply.outcome == 'success'}}
+              run: aws s3 sync ../Code/frontend s3://online-ticket-system-demo-bucket --delete
+
+            - name: invalidate cloudfront cache
+              if: ${{steps.terraform-apply.outcome == 'success'}}
+              run: |
+                    aws cloudfront create-invalidation \
+                      --distribution-id "${{ steps.tf_out.outputs.distribution_id }}" \
+                      --paths "/*"
+
+
+
+
+                
