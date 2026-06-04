@@ -50,7 +50,7 @@ This project avoids that design. The database continues to hold only durable sea
 The queue service introduces controlled admission. Not every user reaching the seat map endpoint is immediately allowed to compete for seats. Users are admitted in a bounded manner per event and category. This protects the booking flow from becoming a free-for-all under load. Reservation then becomes the first point at which seats are actually locked. Seat Availability service only displays the current state. It does not create locks. Payment is external and amount-based. Booking confirmation is the only service that transitions seats to `BOOKED`.
 
 
-![Check Out the High Level Reqirements](./Requirements/1.%20Requirements.md)
+![Check Out the High Level Requirements](./Requirements/1.%20Requirements.md)
 
 ---
 
