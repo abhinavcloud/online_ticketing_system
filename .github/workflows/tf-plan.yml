@@ -13,6 +13,8 @@ on:
           options:
             - "true"
             - "false"
+    branches:
+      - "light"
 
 
 
