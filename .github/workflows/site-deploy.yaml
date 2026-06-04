@@ -35,7 +35,7 @@ jobs:
 
   
             - name: upload website code in S3 bucket
-              run: aws s3 sync . s3://online-ticket-system-demo-bucket --delete
+              run: aws s3 sync . s3://online-ticket-system-demo-bucket --delete --exclude "assets/js/config.js"
 
             - name: invalidate cloudfront cache
               run: |
