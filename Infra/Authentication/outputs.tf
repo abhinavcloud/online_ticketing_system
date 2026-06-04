@@ -30,6 +30,3 @@ output "google_authorized_redirect_uri" {
     description = "The redirect URI to be registered with Google for Oauth (Cognito Hosted UI callback URL for Google Sign In)"
 }
 
-output "cognito_hosted_ui_base_url" {
-  value = "https://${aws_cognito_user_pool_domain.google_domain.domain}.auth.${data.aws_region.current.region}.amazoncognito.com"
-}

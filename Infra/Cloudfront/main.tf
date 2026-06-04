@@ -38,7 +38,7 @@ resource "aws_cloudfront_distribution" "site_ticketing" {
   comment             = "CloudFront for online ticketing system frontend and API proxy"
   price_class         = "PriceClass_100"
 
-  aliases = var.enable_custom_domain ? [var.root_domain] : []
+  aliases = var.enable_custom_domain ? [var.root_domain, "www.${var.root_domain}"] : []
 
   # -------------------------------------------------------------------
   # Origin 1: Private S3 bucket for static frontend assets and HTML pages
