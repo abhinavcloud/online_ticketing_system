@@ -40,7 +40,7 @@ jobs:
             - name: invalidate cloudfront cache
               run: |
                     aws cloudfront create-invalidation \
-                      --distribution-id "${{ steps.tf_out.outputs.distribution_id }}" \
+                      --distribution-id E68DAZMGUWSMP \
                       --paths "/*"
 
 
