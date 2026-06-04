@@ -16,12 +16,12 @@ output "cognito_client_id" {
 }
 
 output "redirect_uris" {
-    value = "https://${var.root_domain}/callback.html"
+    value = "https://www.${var.root_domain}/callback.html"
     description = "List of allowed redirect URIs for the Cognito User Pool Client (used in Oauth flows)"
 }
 
 output "logout_uris" {
-    value = "https://${var.root_domain}/index.html"
+    value = "https://www.${var.root_domain}/index.html"
     description = "List of allowed Logout URIs for the Cognito User Pool Client (used in Oauth flows)"
 }
 
