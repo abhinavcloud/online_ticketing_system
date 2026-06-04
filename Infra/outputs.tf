@@ -40,7 +40,7 @@ output "cloudfront_domain_name" {
 
 
 output "acm_dns_validation" {
-  value = module.Certificate.acm_dns_validation_tld
+  value = module.Certificate.acm_dns_validation
   
 }
 
