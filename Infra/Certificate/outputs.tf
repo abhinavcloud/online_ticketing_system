@@ -9,11 +9,7 @@ output "acm_dns_validation_sub" {
 }
 
 
-output "acm_cert_tld" {
-    value = aws_acm_certificate.online_ticket_system_cert_tld.arn
+output "acm_cert" {
+    value = aws_acm_certificate.online_ticket_system_cert.arn
 }
 
-
-output "acm_cert_sub" {
-    value = aws_acm_certificate.online_ticket_system_cert_sub.arn
-}
