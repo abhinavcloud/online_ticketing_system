@@ -35,11 +35,9 @@ jobs:
 
   
             - name: upload website code in S3 bucket
-              if: ${{steps.terraform-apply.outcome == 'success'}}
               run: aws s3 sync ../Code/frontend s3://online-ticket-system-demo-bucket --delete
 
             - name: invalidate cloudfront cache
-              if: ${{steps.terraform-apply.outcome == 'success'}}
               run: |
                     aws cloudfront create-invalidation \
                       --distribution-id "${{ steps.tf_out.outputs.distribution_id }}" \
