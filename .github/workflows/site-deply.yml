@@ -1,6 +1,6 @@
-name: Terraform Plan and Apply
+name: Site deploy
 
-description: This is a reusable workflow designed to initialise terraform and run terraform plan and upload the plan as an artifact
+description: This is a reusable workflow designed to deploy frontend website
 
 on:
   workflow_dispatch:
