@@ -26,7 +26,7 @@ from botocore.config import Config
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-_BOTO_CFG = Config(connect_timeout=2, read_timeout=3, retries={"max_attempts": 1})
+_BOTO_CFG = Config(connect_timeout=45, read_timeout=3, retries={"max_attempts": 1})
 
 # ----------------------------
 # Warm caches
@@ -251,7 +251,7 @@ def _db_conn():
         user=db_user,
         password=token,
         sslmode=sslmode,
-        connect_timeout=2,
+        connect_timeout=45,
     )
     conn.autocommit = True
 

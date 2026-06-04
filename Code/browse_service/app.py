@@ -120,7 +120,7 @@ def _db_conn():
         user=os.environ["DB_USER"],
         password=_db_auth_token(),
         sslmode="require",
-        connect_timeout=5,
+        connect_timeout=45,
         cursor_factory=psycopg2.extras.RealDictCursor,
     )
     conn.autocommit = True
