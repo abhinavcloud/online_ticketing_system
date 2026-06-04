@@ -2,7 +2,8 @@
 
 
 ## Table of Contents
-- [1. Overview](#overview)
+- [0. Overview](#overview)
+- [1. IMPORTANT - WHY THIS LIGHT BRANCH EXISTS](#important---why-this-light-branch-exists)
 - [2. Problem Statement](#problem-statement)
 - [3. Objectives](#objectives)
 - [4. Functional Scope](#functional-scope)
@@ -27,6 +28,7 @@
 - [23. Future Improvements](#future-improvements)
 - [24. Conclusion](#conclusion)
 
+
 ## Overview
 
 This project is a cloud-native online ticketing platform designed for high-demand event booking scenarios where seat contention, fairness, and booking correctness matter more than raw CRUD simplicity. The system is built to support browsing events, filtering by location and venue, queue-based admission control, seat map retrieval, reservation with atomic seat locking, payment handoff, and booking confirmation. The design assumes that many users can request the same seats concurrently and that the system must prevent double booking without turning the database into a lock manager.
@@ -38,6 +40,80 @@ The platform is implemented on AWS using a serverless-first model. Lambda functi
 This repository is not a toy booking example. It is designed around the practical problems that appear in real ticketing systems: concurrent seat requests, queue admission, replay safety, reservation expiry, cache-only lock semantics, and delayed payment confirmation.
 
 ![High Level Architecture Diagram](./Requirements/High_Level_Design.jpg)
+
+
+## IMPORTANT - WHY THIS LIGHT BRANCH EXISTS
+
+The main branch uses the following database connectivity architecture:
+
+```text
+AWS Lambda → RDS Proxy → Aurora Serverless v2
+```
+
+This is a production-oriented design that provides:
+
+- Connection pooling
+- Connection multiplexing
+- Improved handling of Lambda connection bursts
+- Managed failover support
+- End-to-end IAM authentication
+
+While this architecture is technically robust, it introduces additional operational costs.
+
+### The Cost Challenge
+
+This project is a personal portfolio project with very low and infrequent traffic. There are no real users generating sustained load, and the database workload consists primarily of occasional testing and demonstrations.
+
+Aurora Serverless v2 has been configured to auto-pause after 10 minutes of inactivity to minimize costs. However, when an RDS Proxy is associated with the Aurora cluster, the proxy maintains database connections and prevents the cluster from reaching its lowest-cost idle state.
+
+As a result:
+
+- RDS Proxy incurs its own charges.
+- Aurora remains active due to the proxy association.
+- The overall database cost is higher than necessary for a low-traffic portfolio project.
+
+### What Changed in This Branch
+
+This branch removes the RDS Proxy layer and connects AWS Lambda directly to Aurora Serverless v2 using IAM database authentication.
+
+The architecture becomes:
+
+```text
+AWS Lambda → Aurora Serverless v2
+```
+
+Changes include:
+
+- Removal of RDS Proxy resources.
+- Direct Lambda-to-Aurora connectivity.
+- Direct IAM database authentication.
+- Updated security group configuration.
+- Updated Lambda database connection logic.
+
+### Why This Approach Is Acceptable
+
+The primary reason for using RDS Proxy is to handle large numbers of concurrent database connections efficiently.
+
+For this project:
+
+- Traffic volume is extremely low.
+- Concurrent database connections are minimal.
+- Aurora can comfortably handle the expected workload without a proxy layer.
+
+The architectural trade-off is therefore reasonable:
+
+- Lower infrastructure cost.
+- Simpler deployment model.
+- Aurora auto-pause functionality can be fully utilized.
+- Slightly reduced scalability compared to the production-oriented proxy design.
+
+### Important Note
+
+This branch is intended for cost-optimized operation of the portfolio project.
+
+The main branch remains the reference implementation for a production-style architecture that includes RDS Proxy and demonstrates best practices for serverless database connectivity at scale.
+
+This branch prioritizes cost efficiency, while the main branch prioritizes architectural completeness.
 
 ---
 
