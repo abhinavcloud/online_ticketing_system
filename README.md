@@ -1,6 +1,32 @@
 # Online Ticket System
 
 
+## Table of Contents
+- [1. Overview](#overview)
+- [2. Problem Statement](#problem-statement)
+- [3. Objectives](#objectives)
+- [4. Functional Scope](#functional-scope)
+- [5. Non Functional Design Principals](#non-functional-design-principles)
+- [6. AWS High Level Architecture](#aws-high-level-architecture)
+- [7. Service Architecture](#service-architecture)
+- [8. Consistency Model](#consistency-model)
+- [9. Data Model](#data-model)
+- [10. End to End Flow](#end-to-end-flow)
+- [11. Booking token](#booking-token)
+- [12. Reservation Contract](#reservation-contract)
+- [13. Payment Contract](#payment-contract)
+- [14. Booking Confirmation Contract](#booking-confirmation-contract)
+- [15. Faliure Handling](#failure-handling)
+- [16. Security Model](#security-model)
+- [17. Infrastructure Layout](#infrastructure-layout)
+- [18. Database Bootstrap](#database-bootstrap)
+- [19. Deployment Process](#deployment-process)
+- [20. Local Developement Notes](#local-development-notes)
+- [21. Known Design Choices and TradeOfss](#known-design-choices)
+- [22. Operational Notes](#operational-notes)
+- [23. Future Improvements](#future-improvements)
+- [24. Conclusion](#conclusion)
+
 ## Overview
 
 This project is a cloud-native online ticketing platform designed for high-demand event booking scenarios where seat contention, fairness, and booking correctness matter more than raw CRUD simplicity. The system is built to support browsing events, filtering by location and venue, queue-based admission control, seat map retrieval, reservation with atomic seat locking, payment handoff, and booking confirmation. The design assumes that many users can request the same seats concurrently and that the system must prevent double booking without turning the database into a lock manager.
@@ -11,6 +37,8 @@ The platform is implemented on AWS using a serverless-first model. Lambda functi
 
 This repository is not a toy booking example. It is designed around the practical problems that appear in real ticketing systems: concurrent seat requests, queue admission, replay safety, reservation expiry, cache-only lock semantics, and delayed payment confirmation.
 
+![High Level Architecture Diagram](./Requirements/High_Level_Design.jpg)
+
 ---
 
 ## Problem Statement
@@ -20,6 +48,9 @@ Traditional booking systems fail under contention because they try to use the da
 This project avoids that design. The database continues to hold only durable seat status. Temporary reservation state exists in cache and expires automatically. This makes the system operationally cleaner and closer to how ticketing flows actually behave. A seat is only considered truly sold when confirmation succeeds and the booking service commits the seat update to the database.
 
 The queue service introduces controlled admission. Not every user reaching the seat map endpoint is immediately allowed to compete for seats. Users are admitted in a bounded manner per event and category. This protects the booking flow from becoming a free-for-all under load. Reservation then becomes the first point at which seats are actually locked. Seat Availability service only displays the current state. It does not create locks. Payment is external and amount-based. Booking confirmation is the only service that transitions seats to `BOOKED`.
+
+
+![Check Out the High Level Reqirements](./Requirements/1.%20Requirements.md)
 
 ---
 
@@ -122,9 +153,11 @@ Each Lambda has a single primary responsibility. Browse does not know about queu
 
 ---
 
-## High Level Architecture
+## AWS High Level Architecture
 
 The system is composed of the following major components.
+
+![AWS High Level Architecture](./Requirements/AWS_Architecture.jpg)
 
 ### API Gateway REST API
 
@@ -409,6 +442,8 @@ At this point the booking is complete.
 ---
 
 ## API Surface
+
+![Check out the API Schema Design Here. Please note that this is the proposed schema and may change during the course of implementation as new requirements or issues are discovered](./Requirements/2.%20API_Design.md)
 
 ## Browse Endpoints
 
