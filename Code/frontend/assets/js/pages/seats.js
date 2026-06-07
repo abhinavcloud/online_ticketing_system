@@ -205,7 +205,7 @@ reserveBtn.addEventListener('click', async () => {
     const payload = await api.reserveTicket({
       eventId,
       categoryId,
-      seats: selected,
+      seats: selected.map(seatId => ({ seatId })),
       bookingToken,
       idempotencyKey,
     });
