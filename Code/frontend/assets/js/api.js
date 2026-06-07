@@ -20,7 +20,9 @@ async function request(path, { method = 'GET', query = null, body = null, auth =
   const url = new URL(joinUrl(path));
   if (query) {
     Object.entries(query).forEach(([k, v]) => {
-      if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v));
+      if (v !== undefined && v !== null && v !== '') {
+        url.searchParams.set(k, String(v));
+      }
     });
   }
 
@@ -32,7 +34,11 @@ async function request(path, { method = 'GET', query = null, body = null, auth =
 
   const text = await response.text();
   let data = null;
-  try { data = text ? JSON.parse(text) : null; } catch (_) { data = text; }
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch (_) {
+    data = text;
+  }
 
   if (!response.ok) {
     const message = data?.message || data?.error || `HTTP ${response.status}`;
@@ -45,44 +51,41 @@ async function request(path, { method = 'GET', query = null, body = null, auth =
   return data;
 }
 
-function dualCaseParams(params = {}) {
-  const copy = { ...params };
-  Object.entries(params).forEach(([key, value]) => {
-    if (value === undefined || value === null || value === '') return;
-    if (key.endsWith('Id')) {
-      const snake = key.replace(/[A-Z]/g, m => `_${m.toLowerCase()}`);
-      copy[snake] = value;
-    }
-  });
-  return copy;
-}
-
 export const api = {
   getLocations({ page = 1, pageSize = APP_CONFIG.browsePageSize } = {}) {
-    return request('/v1/location', { query: { page, pageSize, page_size: pageSize } });
+    return request('/v1/location', {
+      query: { page, pageSize }
+    });
   },
 
   getVenues({ locationId, page = 1, pageSize = APP_CONFIG.browsePageSize } = {}) {
     return request('/v1/venue', {
-      query: dualCaseParams({ locationId, page, pageSize, page_size: pageSize })
+      query: {
+        location: locationId,
+        page,
+        pageSize
+      }
     });
   },
 
   getPerformers({ locationId, page = 1, pageSize = APP_CONFIG.browsePageSize } = {}) {
     return request('/v1/performers', {
-      query: dualCaseParams({ locationId, page, pageSize, page_size: pageSize })
+      query: {
+        location: locationId,
+        page,
+        pageSize
+      }
     });
   },
 
-  getEvents({ location, venue, performer, page = 1, pageSize = APP_CONFIG.browsePageSize } = {}) {
+  getEvents({ locationId, venueId, performerId, page = 1, pageSize = APP_CONFIG.browsePageSize } = {}) {
     return request('/v1/events', {
       query: {
-        location: location,
-        venue: venue,
-        performer: performer,
+        location: locationId,
+        venue: venueId,
+        performer: performerId,
         page,
-        pageSize,
-        page_size: pageSize
+        pageSize
       }
     });
   },
@@ -120,7 +123,7 @@ export const api = {
       method: 'GET',
       auth: true,
       bookingToken,
-      query: dualCaseParams({ categoryId })
+      query: { category_id: categoryId }
     });
   },
 
