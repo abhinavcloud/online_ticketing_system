@@ -166,11 +166,11 @@ export const api = {
     });
   },
 
-  payment({ reservationId, amount, currency }) {
+  payment({ reservationId, totalAmount, currency }) {
     return request('/v1/payment', {
       method: 'POST',
       auth: true,
-      body: { reservationId, amount, currency }
+      body: { reservationId, totalAmount, currency }
     });
   },
 

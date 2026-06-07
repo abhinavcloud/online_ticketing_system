@@ -215,11 +215,19 @@ reserveBtn.addEventListener('click', async () => {
     storage.setReservation({
       reservationId: payload.reservationId || payload.id || payload.reservation_id,
       totalAmount:
+        payload.pricing?.totalAmount ??
         payload.totalAmount ??
         payload.total_amount ??
         (booking.unitPrice || 0) * selected.length,
-      currency: payload.currency || booking.currency || 'INR',
-      selectedSeats: payload.selectedSeats || payload.seats || selected,
+      currency:
+        payload.pricing?.currency ||
+        payload.currency ||
+        booking.currency ||
+        'INR',
+      selectedSeats:
+        payload.seats?.locked ||
+        payload.selectedSeats ||
+        selected,
       raw: payload,
     });
 

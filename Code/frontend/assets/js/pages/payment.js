@@ -35,7 +35,7 @@ payNowBtn.addEventListener('click', async () => {
   try {
     const payload = await api.payment({
       reservationId: reservation.reservationId,
-      amount: reservation.totalAmount,
+      totalAmount: reservation.totalAmount,
       currency: reservation.currency || booking.currency || 'INR',
     });
 
