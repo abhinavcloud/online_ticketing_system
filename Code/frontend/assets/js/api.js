@@ -74,7 +74,7 @@ export const api = {
     });
   },
 
-  getEvents({ locationId, venueId, performerId, page = 1, pageSize = APP_CONFIG.browsePageSize } = {}) {
+  getEvents({ location, venue, performer, page = 1, pageSize = APP_CONFIG.browsePageSize } = {}) {
     return request('/v1/events', {
       query: {
         location: locationId,
