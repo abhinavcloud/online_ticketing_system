@@ -12,12 +12,13 @@ const statusBox = document.querySelector('#queueStatusBox');
 const leaveBtn = document.querySelector('#leaveQueueBtn');
 let pollTimer = null;
 
-const booking = storage.getBooking();
-const eventId = qs('event_id') || qs('eventId') || booking.eventId;
-const categoryId = qs('category_id') || qs('categoryId') || booking.categoryId;
+const booking = storage.getBooking() || {};
+const eventId = qs('event_id') || qs('eventId') || booking.eventId || '';
+const categoryId = qs('category_id') || qs('categoryId') || booking.categoryId || '';
 
 if (!eventId || !categoryId) {
-  statusBox.innerHTML = '<h3 class="mt-0">Missing booking context</h3><p class="mb-0">Go back to event details and choose a category again.</p>';
+  statusBox.innerHTML =
+    '<h3 class="mt-0">Missing booking context</h3><p class="mb-0">Go back to event details and choose a category again.</p>';
   leaveBtn.classList.add('hidden');
 } else {
   storage.patchBooking({ eventId, categoryId });
@@ -31,11 +32,40 @@ function setStatus(title, text, kind = 'info') {
   statusBox.innerHTML = `<h3 class="mt-0">${title}</h3><p class="mb-0">${text}</p>`;
 }
 
+function goToSeatsIfContextReady() {
+  const next = storage.getBooking() || {};
+
+  if (!next.eventId || !next.categoryId) {
+    setStatus(
+      'Queue state incomplete',
+      'Event or category context is missing from browser storage. Please restart the booking flow.',
+      'danger'
+    );
+    return;
+  }
+
+  if (!next.sessionId || !next.bookingToken) {
+    setStatus(
+      'Queue state incomplete',
+      'Queue released but session ID or booking token was not persisted. Please restart the booking flow.',
+      'danger'
+    );
+    return;
+  }
+
+  window.location.href =
+    `seats.html?event_id=${encodeURIComponent(next.eventId)}&category_id=${encodeURIComponent(next.categoryId)}`;
+}
+
 async function releaseAndExit() {
-  const current = storage.getBooking();
+  const current = storage.getBooking() || {};
   try {
     if (current.sessionId) {
-      await api.queueRelease({ eventId: current.eventId, categoryId: current.categoryId, sessionId: current.sessionId });
+      await api.queueRelease({
+        eventId: current.eventId,
+        categoryId: current.categoryId,
+        sessionId: current.sessionId,
+      });
     }
   } catch (_) {
     // best-effort
@@ -47,7 +77,18 @@ async function releaseAndExit() {
 
 leaveBtn.addEventListener('click', releaseAndExit);
 
-async function pollAllowed(current) {
+async function pollAllowed() {
+  const current = storage.getBooking() || {};
+
+  if (!current.eventId || !current.categoryId || !current.sessionId) {
+    setStatus(
+      'Queue session missing',
+      'Queue polling cannot continue because event, category, or session context is missing.',
+      'danger'
+    );
+    return;
+  }
+
   try {
     const payload = await api.queuePoll({
       eventId: current.eventId,
@@ -56,31 +97,53 @@ async function pollAllowed(current) {
       bookingToken: current.bookingToken,
     });
 
-    const status = payload.status || payload.queueStatus || 'WAITING';
-    if (status === 'ALLOWED') {
+    const queueStatus = (payload.status || payload.queueStatus || 'WAITING').toUpperCase();
+
+    if (queueStatus === 'ALLOWED') {
       storage.patchBooking({
         bookingToken: payload.bookingToken || current.bookingToken,
         sessionId: payload.sessionId || current.sessionId,
+        queueStatus,
       });
-      setStatus('Queue released', 'Backend allowed this session to continue into seat selection.', 'success');
+
+      setStatus(
+        'Queue released',
+        payload.message || 'Backend allowed this session to continue into seat selection.',
+        'success'
+      );
+
       setTimeout(() => {
-        window.location.href = `seats.html?event_id=${encodeURIComponent(current.eventId)}&category_id=${encodeURIComponent(current.categoryId)}`;
+        goToSeatsIfContextReady();
       }, 500);
       return;
     }
 
-    if (status === 'SOLD_OUT') {
+    if (queueStatus === 'SOLD_OUT') {
       setStatus('Sold out', payload.message || 'This category is sold out.', 'warning');
       return;
     }
 
-    if (status === 'EXPIRED') {
+    if (queueStatus === 'EXPIRED') {
       window.location.href = 'session-expired.html';
       return;
     }
 
-    setStatus('Waiting for release', payload.message || 'Still waiting in queue. Polling again shortly...', 'info');
-    pollTimer = window.setTimeout(() => pollAllowed(storage.getBooking()), (payload.pollAfterSeconds || APP_CONFIG.queuePollFallbackSeconds) * 1000);
+    storage.patchBooking({
+      bookingToken: payload.bookingToken || current.bookingToken,
+      sessionId: payload.sessionId || current.sessionId,
+      queueStatus,
+    });
+
+    setStatus(
+      'Waiting for release',
+      payload.message || 'Still waiting in queue. Polling again shortly...',
+      'info'
+    );
+
+    pollTimer = window.setTimeout(
+      () => pollAllowed(),
+      (payload.pollAfterSeconds || APP_CONFIG.queuePollFallbackSeconds) * 1000
+    );
   } catch (error) {
     setStatus('Queue polling failed', error.message, 'danger');
   }
@@ -89,32 +152,63 @@ async function pollAllowed(current) {
 async function enterQueue() {
   try {
     const payload = await api.queueEnter({ eventId, categoryId });
+
     storage.patchBooking({
+      eventId,
+      categoryId,
       sessionId: payload.sessionId || null,
       bookingToken: payload.bookingToken || null,
       queueStatus: payload.status || 'WAITING',
     });
-    setText('#queueSessionId', payload.sessionId || 'Pending');
 
-    if ((payload.status || '').toUpperCase() === 'ALLOWED') {
-      setStatus('Immediate release', payload.message || 'Queue allowed this session immediately.', 'success');
-      window.location.href = `seats.html?event_id=${encodeURIComponent(eventId)}&category_id=${encodeURIComponent(categoryId)}`;
+    const next = storage.getBooking() || {};
+    setText('#queueSessionId', next.sessionId || 'Pending');
+
+    const queueStatus = (payload.status || '').toUpperCase();
+
+    if (queueStatus === 'ALLOWED') {
+      setStatus(
+        'Immediate release',
+        payload.message || 'Queue allowed this session immediately.',
+        'success'
+      );
+
+      setTimeout(() => {
+        goToSeatsIfContextReady();
+      }, 300);
       return;
     }
 
-    if ((payload.status || '').toUpperCase() === 'SOLD_OUT') {
-      setStatus('Sold out', payload.message || 'Tickets are sold out for this category.', 'warning');
+    if (queueStatus === 'SOLD_OUT') {
+      setStatus(
+        'Sold out',
+        payload.message || 'Tickets are sold out for this category.',
+        'warning'
+      );
       return;
     }
 
-    setStatus('In queue', payload.message || 'Waiting for available seats.', 'info');
-    pollTimer = window.setTimeout(() => pollAllowed(storage.getBooking()), (payload.pollAfterSeconds || APP_CONFIG.queuePollFallbackSeconds) * 1000);
+    setStatus(
+      'In queue',
+      payload.message || 'Waiting for available seats.',
+      'info'
+    );
+
+    pollTimer = window.setTimeout(
+      () => pollAllowed(),
+      (payload.pollAfterSeconds || APP_CONFIG.queuePollFallbackSeconds) * 1000
+    );
   } catch (error) {
     setStatus('Queue entry failed', error.message, 'danger');
   }
 }
 
-if (eventId && categoryId) enterQueue();
+if (eventId && categoryId) {
+  enterQueue();
+}
+
 window.addEventListener('beforeunload', () => {
-  if (pollTimer) window.clearTimeout(pollTimer);
+  if (pollTimer) {
+    window.clearTimeout(pollTimer);
+  }
 });

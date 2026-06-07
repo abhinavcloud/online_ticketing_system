@@ -144,8 +144,15 @@ def _queue_cache():
     region = os.environ.get("APP_REGION") or os.environ.get("AWS_DEFAULT_REGION")
 
     now = time.time()
-    if _QUEUE_REDIS is not None and _QUEUE_REDIS.closed == 0 and now < _QUEUE_REDIS_REFRESH_AT:
-        return _QUEUE_REDIS
+    
+    if _QUEUE_REDIS is not None and now < _QUEUE_REDIS_REFRESH_AT:
+        try:
+            _QUEUE_REDIS.ping()
+            return _QUEUE_REDIS
+        except Exception as e:
+            logger.warning("Queue cache health check failed, refreshing client: %s", str(e))
+            _QUEUE_REDIS = None
+
 
     token = _elasticache_iam_token(user_id=user_id, cache_name=cache_name, region=region)
 
@@ -184,8 +191,15 @@ def _seatlock_cache():
     region = os.environ.get("APP_REGION") or os.environ.get("AWS_DEFAULT_REGION")
 
     now = time.time()
-    if _SEATLOCK_REDIS is not None and _SEATLOCK_REDIS.closed == 0 and now < _SEATLOCK_REDIS_REFRESH_AT:
-        return _SEATLOCK_REDIS
+    
+    if _SEATLOCK_REDIS is not None and now < _SEATLOCK_REDIS_REFRESH_AT:
+        try:
+            _SEATLOCK_REDIS.ping()
+            return _SEATLOCK_REDIS
+        except Exception as e:
+            logger.warning("Seat lock cache health check failed, refreshing client: %s", str(e))
+            _SEATLOCK_REDIS = None
+
 
     token = _elasticache_iam_token(user_id=user_id, cache_name=cache_name, region=region)
 
