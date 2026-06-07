@@ -359,7 +359,7 @@ def _delete_locks_and_decrement(sl, lock_keys: List[str], count_key: str, reserv
         return
     try:
         all_keys = lock_keys + [count_key]
-        sl.eval(_RELEASE_LOCKS_LUA, len(all_keys) + 1, *all_keys, reservation_id)
+        sl.eval(_RELEASE_LOCKS_LUA, len(all_keys), *all_keys, reservation_id)
     except Exception:
         logger.exception("Failed to delete seat locks and decrement count (best-effort)")
 
