@@ -89,68 +89,68 @@ jobs:
               id: terraform-apply
               run: terraform apply -auto-approve tfplan
 
-            - name: Export Terraform outputs as step outputs
-              id: tf_out
-              shell: bash
-              run: |
-                set -euo pipefail
-
-                # Capture terraform outputs as JSON
-                TF_OUT=$(terraform output -json)
+#            - name: Export Terraform outputs as step outputs
+#              id: tf_out
+#              shell: bash
+#              run: |
+#                set -euo pipefail
+#
+#                # Capture terraform outputs as JSON
+#                TF_OUT=$(terraform output -json)
 
              
-                COGNITO_DOMAIN=$(echo "$TF_OUT" | jq -r '.cognito_domain.value')
-                CLIENT_ID=$(echo "$TF_OUT" | jq -r '.cognito_client_id.value')
-                REDIRECT_URI=$(echo "$TF_OUT" | jq -r '.redirect_uris.value')
-                LOGOUT_URI=$(echo "$TF_OUT" | jq -r '.logout_uris.value')
-                DISTRIBUTION_ID=$(echo "$TF_OUT" | jq -r '.distribution_id.value')
-                AWS_REGION=$(echo "$TF_OUT" | jq -r '.aws_region.value')
+#                COGNITO_DOMAIN=$(echo "$TF_OUT" | jq -r '.cognito_domain.value')
+#                CLIENT_ID=$(echo "$TF_OUT" | jq -r '.cognito_client_id.value')
+#                REDIRECT_URI=$(echo "$TF_OUT" | jq -r '.redirect_uris.value')
+#                LOGOUT_URI=$(echo "$TF_OUT" | jq -r '.logout_uris.value')
+#                DISTRIBUTION_ID=$(echo "$TF_OUT" | jq -r '.distribution_id.value')
+#                AWS_REGION=$(echo "$TF_OUT" | jq -r '.aws_region.value')
 
-                {
-                  echo "cognito_domain=$COGNITO_DOMAIN"
-                  echo "client_id=$CLIENT_ID"
-                  echo "redirect_uri=$REDIRECT_URI"
-                  echo "logout_uri=$LOGOUT_URI"
-                  echo "distribution_id=$DISTRIBUTION_ID"
-                  echo "aws_region=$AWS_REGION"
-                } >> "$GITHUB_OUTPUT"
-
-
-
-            - name: Generate frontend config.js from Terraform outputs
-              run: |
-                  cat > ../Code/frontend/assets/js/config.js <<EOF
-                  export const APP_CONFIG = {
-                    appName: 'Online Ticketing System',
-                    apiBaseUrl:  "${{ secrets.DOMAIN_URL }}",
-                    region: "${{ steps.tf_out.outputs.aws_region }}",
-                    cognitoDomain: "${{ steps.tf_out.outputs.cognito_domain }}",
-                    cognitoClientId: "${{ steps.tf_out.outputs.client_id }}",
-                    redirectUri: "${{ steps.tf_out.outputs.redirect_uri }}",
-                    logoutUri: "${{ steps.tf_out.outputs.logout_uri }}",
-                    oauthScopes: ['openid', 'email'],
-                    identityProvider: 'Google',
-                    browsePageSize: 12,
-                    maxSeatSelection: 5,
-                    queuePollFallbackSeconds: 5
-                  };
-                  EOF
+#                {
+#                  echo "cognito_domain=$COGNITO_DOMAIN"
+#                  echo "client_id=$CLIENT_ID"
+#                  echo "redirect_uri=$REDIRECT_URI"
+#                  echo "logout_uri=$LOGOUT_URI"
+#                  echo "distribution_id=$DISTRIBUTION_ID"
+#                  echo "aws_region=$AWS_REGION"
+#                } >> "$GITHUB_OUTPUT"
 
 
-                  echo "Generated config.js:"
-                  cat ../Code/frontend/assets/js/config.js
 
-            - name: upload website code in S3 bucket
-              run: aws s3 sync . s3://online-ticket-system-demo-bucket --delete --exclude "assets/js/config.js"
+ #           - name: Generate frontend config.js from Terraform outputs
+ #             run: |
+ #                 cat > ../Code/frontend/assets/js/config.js <<EOF
+ #                 export const APP_CONFIG = {
+ #                   appName: 'Online Ticketing System',
+ #                   apiBaseUrl:  "${{ secrets.DOMAIN_URL }}",
+ #                   region: "${{ steps.tf_out.outputs.aws_region }}",
+ #                   cognitoDomain: "${{ steps.tf_out.outputs.cognito_domain }}",
+ #                   cognitoClientId: "${{ steps.tf_out.outputs.client_id }}",
+ #                   redirectUri: "${{ steps.tf_out.outputs.redirect_uri }}",
+ #                   logoutUri: "${{ steps.tf_out.outputs.logout_uri }}",
+ #                   oauthScopes: ['openid', 'email'],
+ #                   identityProvider: 'Google',
+ #                   browsePageSize: 12,
+ #                   maxSeatSelection: 5,
+ #                   queuePollFallbackSeconds: 5
+ #                 };
+ #                 EOF
+
+
+#                  echo "Generated config.js:"
+#                  cat ../Code/frontend/assets/js/config.js
+
+#            - name: upload website code in S3 bucket
+#              run: aws s3 sync . s3://online-ticket-system-demo-bucket --delete --exclude "assets/js/config.js"
 
   
 
-            - name: invalidate cloudfront cache
-              if: ${{steps.terraform-apply.outcome == 'success'}}
-              run: |
-                    aws cloudfront create-invalidation \
-                      --distribution-id "${{ steps.tf_out.outputs.distribution_id }}" \
-                      --paths "/*"
+#            - name: invalidate cloudfront cache
+#              if: ${{steps.terraform-apply.outcome == 'success'}}
+#              run: |
+#                    aws cloudfront create-invalidation \
+#                      --distribution-id "${{ steps.tf_out.outputs.distribution_id }}" \
+#                      --paths "/*"
 
 
 
