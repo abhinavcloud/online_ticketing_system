@@ -23,8 +23,19 @@ function buildHeaders({ auth = false, json = true, bookingToken = null, idempote
 }
 
 
-async function request(path, { method = 'GET', query = null, body = null, auth = false, bookingToken = null } = {}) {
+async function request(
+  path,
+  {
+    method = 'GET',
+    query = null,
+    body = null,
+    auth = false,
+    bookingToken = null,
+    idempotencyKey = null,
+  } = {}
+) {
   const url = new URL(joinUrl(path));
+
   if (query) {
     Object.entries(query).forEach(([k, v]) => {
       if (v !== undefined && v !== null && v !== '') {
@@ -35,12 +46,18 @@ async function request(path, { method = 'GET', query = null, body = null, auth =
 
   const response = await fetch(url.toString(), {
     method,
-    headers: buildHeaders({ auth, json: body !== null, bookingToken }),
+    headers: buildHeaders({
+      auth,
+      json: body !== null,
+      bookingToken,
+      idempotencyKey,
+    }),
     body: body !== null ? JSON.stringify(body) : null,
   });
 
   const text = await response.text();
   let data = null;
+
   try {
     data = text ? JSON.parse(text) : null;
   } catch (_) {
@@ -139,7 +156,13 @@ export const api = {
       method: 'POST',
       auth: true,
       bookingToken,
-      body: { eventId, categoryId, seats, bookingToken, idempotencyKey }
+      idempotencyKey,
+      body: {
+        eventId,
+        categoryId,
+        seats,
+        bookingToken,
+      }
     });
   },
 
