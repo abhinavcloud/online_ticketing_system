@@ -77,9 +77,9 @@ export const api = {
   getEvents({ location, venue, performer, page = 1, pageSize = APP_CONFIG.browsePageSize } = {}) {
     return request('/v1/events', {
       query: {
-        location: locationId,
-        venue: venueId,
-        performer: performerId,
+        location: location,
+        venue: venue,
+        performer: performer,
         page,
         pageSize,
         page_size: pageSize
