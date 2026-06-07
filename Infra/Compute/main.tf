@@ -266,6 +266,7 @@ resource "aws_kms_key" "queue_jwt_signing_key" {
         Principal: { AWS: aws_iam_role.lambda_role_ticket_system.arn },
         Action: [
           "kms:Sign",
+          "kms:Verify",
           "kms:GetPublicKey",
           "kms:DescribeKey"
         ],
@@ -292,6 +293,7 @@ resource "aws_iam_policy" "lambda_kms_sign_policy" {
       Effect: "Allow",
       Action: [
         "kms:Sign",
+        "kms:Verify",
         "kms:GetPublicKey",
         "kms:DescribeKey"
       ],
