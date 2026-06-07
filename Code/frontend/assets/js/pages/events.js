@@ -11,23 +11,36 @@ locationInput.value = qs('location_id') || qs('locationId') || '';
 venueInput.value = qs('venue_id') || qs('venueId') || '';
 performerInput.value = qs('performer_id') || qs('performerId') || '';
 
-function renderEvent(event) {
-  const eventId = event.id || event.eventId;
-  const categoryMarkup = Array.isArray(event.categories) && event.categories.length
-    ? `<div class="inline-actions mt-2">${event.categories.map(c => `<span class="badge">${c.name || c.categoryName}: ${c.currency || 'INR'} ${c.price ?? ''}</span>`).join('')}</div>`
+function normalizeEvent(event) {
+  return {
+    eventId: event.eventId ?? event.id ?? '',
+    eventName: event.eventName ?? event.name ?? 'Untitled event',
+    dateTime: event.dateTime ?? event.eventDate ?? event.event_date ?? 'Date unavailable',
+    category: event.category ?? '',
+    venueName: event.venue?.venueName ?? event.venueName ?? event.venue_name ?? 'Venue unavailable',
+    locationName: event.location?.locationName ?? event.locationName ?? event.location_name ?? 'Location unavailable',
+    performers: Array.isArray(event.performers) ? event.performers : [],
+  };
+}
+
+function renderEvent(rawEvent) {
+  const event = normalizeEvent(rawEvent);
+
+  const performerMarkup = event.performers.length
+    ? `<div class="inline-actions mt-2">${event.performers.map(p => `<span class="badge">${p.performerName}</span>`).join('')}</div>`
     : '';
 
   return `
-    <a class="card" href="event-detail.html?event_id=${encodeURIComponent(eventId)}">
-      <span class="badge ${String(event.status || '').toUpperCase() === 'ON_SALE' ? 'success' : 'warning'}">${event.status || 'EVENT'}</span>
-      <h3 class="card-title mt-2">${event.name || 'Untitled event'}</h3>
+    <a class="card" href="event-detail.html?event_id=${encodeURIComponent(event.eventId)}">
+      <span class="badge brand">${event.category || 'EVENT'}</span>
+      <h3 class="card-title mt-2">${event.eventName}</h3>
       <div class="meta-stack muted">
-        <span>${event.event_date || event.eventDate || 'Date unavailable'}</span>
-        <span>${event.venue_name || event.venueName || 'Venue unavailable'}</span>
-        <span>${event.location_name || event.locationName || 'Location unavailable'}</span>
+        <span>${event.dateTime}</span>
+        <span>${event.venueName}</span>
+        <span>${event.locationName}</span>
       </div>
-      ${categoryMarkup}
-      <p class="helper-text mt-2 mb-0">${event.description || 'Open event details to continue.'}</p>
+      ${performerMarkup}
+      <p class="helper-text mt-2 mb-0">Open event details to continue.</p>
     </a>
   `;
 }
@@ -35,6 +48,7 @@ function renderEvent(event) {
 async function loadEvents() {
   grid.innerHTML = '<div class="loader"></div>';
   status.classList.add('hidden');
+
   const locationId = locationInput.value.trim();
   const venueId = venueInput.value.trim();
   const performerId = performerInput.value.trim();
@@ -46,12 +60,19 @@ async function loadEvents() {
 
   try {
     const payload = await api.getEvents({ locationId, venueId, performerId });
-    const items = asArray(payload);
-    grid.innerHTML = items.length ? items.map(renderEvent).join('') : '<div class="message-box warning"><p class="mb-0">No events returned for current filters.</p></div>';
+    const items = asArray(payload.events || payload);
+
+    grid.innerHTML = items.length
+      ? items.map(renderEvent).join('')
+      : '<div class="message-box warning"><p class="mb-0">No events returned for current filters.</p></div>';
   } catch (error) {
     grid.innerHTML = `<div class="message-box danger"><h3 class="mt-0">Failed to load events</h3><p class="mb-0">${error.message}</p></div>`;
   }
 }
 
 document.querySelector('#applyFiltersBtn').addEventListener('click', loadEvents);
-if (locationInput.value) loadEvents();
+
+if (locationInput.value) {
+  loadEvents();
+}
+``

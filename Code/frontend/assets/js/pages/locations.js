@@ -3,7 +3,7 @@ import { asArray } from './common.js';
 
 function normalizeLocation(location) {
   return {
-    id: location.locationId ?? location.id ?? location.location_id,
+    id: location.locationId ?? location.id ?? location.location_id ?? '',
     name: location.locationName ?? location.name ?? location.location_name ?? 'Unnamed location',
   };
 }
@@ -26,7 +26,7 @@ function renderCard(rawLocation) {
 
   try {
     const payload = await api.getLocations();
-    const items = asArray(payload.locations);
+    const items = asArray(payload.locations || payload);
 
     target.innerHTML = items.length
       ? items.map(renderCard).join('')

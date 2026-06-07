@@ -3,35 +3,56 @@ import { storage } from '../storage.js';
 import { getAuthState } from '../auth.js';
 import { qs, money } from './common.js';
 
-function categoryCard(eventData, category) {
-  const categoryId = category.id || category.categoryId || '';
-  const categoryName = category.name || category.categoryName || 'Category';
-  const price = category.price ?? category.unitPrice ?? 0;
-  const currency = category.currency || 'INR';
+function normalizeEventDetail(eventData) {
+  return {
+    eventId: eventData.eventId ?? eventData.id ?? '',
+    eventName: eventData.eventName ?? eventData.name ?? 'Untitled event',
+    eventDescription: eventData.eventDescription ?? eventData.description ?? '',
+    dateTime: eventData.dateTime ?? eventData.eventDate ?? eventData.event_date ?? '',
+    status: eventData.status ?? 'EVENT',
+    venueId: eventData.venue?.venueId ?? eventData.venueId ?? '',
+    venueName: eventData.venue?.venueName ?? eventData.venueName ?? eventData.venue_name ?? '—',
+    locationId: eventData.location?.locationId ?? eventData.locationId ?? '',
+    locationName: eventData.location?.locationName ?? eventData.locationName ?? eventData.location_name ?? '—',
+    performers: Array.isArray(eventData.performers) ? eventData.performers : [],
+    ticketCategories: Array.isArray(eventData.ticketCategories) ? eventData.ticketCategories : [],
+  };
+}
+
+function normalizeCategory(category) {
+  return {
+    categoryId: category.categoryId ?? category.id ?? '',
+    categoryName: category.categoryName ?? category.name ?? 'Category',
+    price: category.price ?? category.unitPrice ?? 0,
+    currency: category.currency ?? 'INR',
+    availableTickets: category.availableTickets ?? 0,
+    totalTickets: category.totalTickets ?? 0,
+    status: category.status ?? 'AVAILABLE',
+  };
+}
+
+function categoryCard(eventData, rawCategory) {
+  const category = normalizeCategory(rawCategory);
+
   return `
     <div class="card">
-      <span class="badge brand">${categoryName}</span>
-      <h3 class="card-title mt-2">${money(price, currency)}</h3>
+      <span class="badge brand">${category.categoryName}</span>
+      <h3 class="card-title mt-2">${money(category.price, category.currency)}</h3>
       <p class="helper-text">Category-specific seat selection begins only after queue release.</p>
+      <p class="helper-text mb-0">Available: ${category.availableTickets} / Total: ${category.totalTickets}</p>
       <button class="primary-btn mt-2" data-book-btn
-        data-event-id="${eventData.id}"
-        data-event-name="${(eventData.name || '').replace(/"/g, '&quot;')}"
-        data-event-date="${(eventData.event_date || eventData.eventDate || '').replace(/"/g, '&quot;')}"
-        data-venue-name="${(eventData.venue_name || eventData.venueName || '').replace(/"/g, '&quot;')}"
-        data-category-id="${categoryId}"
-        data-category-name="${categoryName.replace(/"/g, '&quot;')}"
-        data-price="${price}"
-        data-currency="${currency}">
+        data-event-id="${eventData.eventId}"
+        data-event-name="${(eventData.eventName || '').replace(/"/g, '&quot;')}"
+        data-event-date="${(eventData.dateTime || '').replace(/"/g, '&quot;')}"
+        data-venue-name="${(eventData.venueName || '').replace(/"/g, '&quot;')}"
+        data-category-id="${category.categoryId}"
+        data-category-name="${category.categoryName.replace(/"/g, '&quot;')}"
+        data-price="${category.price}"
+        data-currency="${category.currency}">
         Book this category
       </button>
     </div>
   `;
-}
-
-function normalizeCategories(eventData) {
-  if (Array.isArray(eventData.categories)) return eventData.categories;
-  if (Array.isArray(eventData.event_categories)) return eventData.event_categories;
-  return [];
 }
 
 (async function init() {
@@ -44,21 +65,21 @@ function normalizeCategories(eventData) {
   }
 
   try {
-    const eventData = await api.getEventDetail(eventId);
-    const categories = normalizeCategories(eventData);
+    const rawEventData = await api.getEventDetail(eventId);
+    const eventData = normalizeEventDetail(rawEventData);
     const statusBadgeClass = String(eventData.status || '').toUpperCase() === 'ON_SALE' ? 'success' : 'warning';
 
     target.innerHTML = `
       <div class="checkout-layout">
         <div>
           <span class="badge ${statusBadgeClass}">${eventData.status || 'EVENT'}</span>
-          <h1 class="hero-title mt-2">${eventData.name || 'Untitled event'}</h1>
-          <p class="hero-subtitle">${eventData.description || 'No description returned by the event detail API.'}</p>
+          <h1 class="hero-title mt-2">${eventData.eventName}</h1>
+          <p class="hero-subtitle">${eventData.eventDescription || 'No description returned by the event detail API.'}</p>
 
           <div class="metrics-grid mt-3">
-            <div class="metric"><div class="muted">Date</div><div>${eventData.event_date || eventData.eventDate || '—'}</div></div>
-            <div class="metric"><div class="muted">Venue</div><div>${eventData.venue_name || eventData.venueName || '—'}</div></div>
-            <div class="metric"><div class="muted">Location</div><div>${eventData.location_name || eventData.locationName || '—'}</div></div>
+            <div class="metric"><div class="muted">Date</div><div>${eventData.dateTime || '—'}</div></div>
+            <div class="metric"><div class="muted">Venue</div><div>${eventData.venueName}</div></div>
+            <div class="metric"><div class="muted">Location</div><div>${eventData.locationName}</div></div>
           </div>
 
           <section class="section mt-3">
@@ -69,9 +90,9 @@ function normalizeCategories(eventData) {
               </div>
             </div>
             <div class="grid-3">
-              ${categories.length
-                ? categories.map(category => categoryCard(eventData, category)).join('')
-                : `<div class="message-box warning"><h3 class="mt-0">No category data returned</h3><p class="mb-0">This frontend expects event detail API to include category list. If your Lambda returns categories under a different property, update the renderer accordingly.</p></div>`}
+              ${eventData.ticketCategories.length
+                ? eventData.ticketCategories.map(category => categoryCard(eventData, category)).join('')
+                : `<div class="message-box warning"><h3 class="mt-0">No category data returned</h3><p class="mb-0">This frontend expects event detail API to return ticketCategories.</p></div>`}
             </div>
           </section>
         </div>
