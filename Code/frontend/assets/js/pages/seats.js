@@ -225,7 +225,7 @@ reserveBtn.addEventListener('click', async () => {
 
     window.location.href = 'reservation-review.html';
   } catch (error) {
-  console.error('reserveTicket failed', {
+    console.error('reserveTicket failed', {
     status: error.status,
     message: error.message,
     payload: error.payload

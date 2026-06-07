@@ -17,7 +17,7 @@ defaults:
 
 
 jobs:
-    terraform-plan-apply:
+    upload-and-refresh-frontend-code:
         runs-on: ubuntu-latest
 
        
