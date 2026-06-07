@@ -11,15 +11,17 @@ const payment = storage.getPayment();
 
 (async function finalizeBooking() {
   if (!reservation?.reservationId || !payment?.paymentId || !booking?.bookingToken) {
-    storage.clearFlow();
-    window.location.href = 'index.html';
+    message.textContent = `Missing state: reservationId=${!!reservation?.reservationId}, paymentId=${!!payment?.paymentId}, bookingToken=${!!booking?.bookingToken}`;
     return;
   }
+
 
   try {
     const payload = await api.booking({
       reservationId: reservation.reservationId,
       paymentId: payment.paymentId,
+      paymentStatus: payment.status,
+      amount: reservation.totalAmount,
       bookingToken: booking.bookingToken,
     });
 

@@ -174,12 +174,20 @@ export const api = {
     });
   },
 
-  booking({ reservationId, paymentId, bookingToken }) {
+  
+  booking({ reservationId, paymentId, paymentStatus, amount, bookingToken }) {
     return request('/v1/booking', {
       method: 'POST',
       auth: true,
       bookingToken,
-      body: { reservationId, paymentId, bookingToken }
+      body: {
+        reservationId,
+        paymentId,
+        paymentStatus,
+        amount,
+        bookingToken
+      }
     });
   }
+
 };

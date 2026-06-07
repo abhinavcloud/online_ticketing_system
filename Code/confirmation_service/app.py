@@ -333,7 +333,7 @@ end
 
 if deleted > 0 then
     local new_val = redis.call('DECRBY', count_key, deleted)
-    if int(new_val) < 0 then
+    if tonumber(new_val) < 0 then
         redis.call('SET', count_key, 0)
     end
 end
