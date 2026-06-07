@@ -225,7 +225,26 @@ reserveBtn.addEventListener('click', async () => {
 
     window.location.href = 'reservation-review.html';
   } catch (error) {
+  console.error('reserveTicket failed', {
+    status: error.status,
+    message: error.message,
+    payload: error.payload
+  });
+
+  const backendError = error.payload?.error || '';
+  const backendMessage = error.payload?.message || error.message || 'Reservation failed';
+
+  if (
+    error.status === 409 ||
+    backendError === 'SEAT_CONFLICT' ||
+    backendError === 'SEATS_NOT_AVAILABLE' ||
+    backendError === 'RESERVATION_CONFLICT'
+  ) {
     window.location.href = 'reservation-conflict.html';
+    return;
+  }
+
+  setStatus('Reservation failed', backendMessage, 'danger');
   } finally {
     reserveBtn.disabled = false;
     reserveBtn.textContent = 'Reserve selected seats';
