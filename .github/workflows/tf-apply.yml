@@ -141,8 +141,9 @@ jobs:
                   cat ../Code/frontend/assets/js/config.js
 
             - name: upload website code in S3 bucket
-              if: ${{steps.terraform-apply.outcome == 'success'}}
-              run: aws s3 sync ../Code/frontend s3://online-ticket-system-demo-bucket --delete
+              run: aws s3 sync . s3://online-ticket-system-demo-bucket --delete --exclude "assets/js/config.js"
+
+  
 
             - name: invalidate cloudfront cache
               if: ${{steps.terraform-apply.outcome == 'success'}}
