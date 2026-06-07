@@ -58,20 +58,20 @@ resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.vpc.id
 }
 
-# Create a regional NAT Gatway
-resource "aws_nat_gateway" "regional_nat" {
-  vpc_id            = aws_vpc.vpc.id
-  availability_mode = "regional"
-  depends_on = [ aws_internet_gateway.igw ]
-}
+# Create a regional NAT Gatway - Removing Nat Gateway as its not needed in this setup
+#resource "aws_nat_gateway" "regional_nat" {
+#  vpc_id            = aws_vpc.vpc.id
+#  availability_mode = "regional"
+#  depends_on = [ aws_internet_gateway.igw ]
+#}
 
 # Create a route for each route table and associate regional NAT Gateway to it
-resource "aws_route" "private_route" {
-  for_each = var.private_subnets
-  route_table_id = aws_route_table.private_route_table[each.key].id
-  destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id = aws_nat_gateway.regional_nat.id
-}
+#resource "aws_route" "private_route" {
+#  for_each = var.private_subnets
+#  route_table_id = aws_route_table.private_route_table[each.key].id
+#  destination_cidr_block = "0.0.0.0/0"
+#  nat_gateway_id = aws_nat_gateway.regional_nat.id
+#}
 
 # Create a VPC Endpoint for Lambda to connect to KMS
 
