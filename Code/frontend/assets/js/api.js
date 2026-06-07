@@ -5,16 +5,23 @@ function joinUrl(path) {
   return `${APP_CONFIG.apiBaseUrl}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
-function buildHeaders({ auth = false, json = true, bookingToken = null } = {}) {
+
+function buildHeaders({ auth = false, json = true, bookingToken = null, idempotencyKey = null } = {}) {
   const headers = {};
+
   if (json) headers['Content-Type'] = 'application/json';
+
   if (auth) {
     const token = getBearerToken();
     if (token) headers['Authorization'] = `Bearer ${token}`;
   }
+
   if (bookingToken) headers['x-booking-token'] = bookingToken;
+  if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
+
   return headers;
 }
+
 
 async function request(path, { method = 'GET', query = null, body = null, auth = false, bookingToken = null } = {}) {
   const url = new URL(joinUrl(path));
