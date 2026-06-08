@@ -1,4 +1,5 @@
-import { api } from '../api.js';import { api } from requireAuth } from '../auth.js';
+import { api } from '../api.js';
+import { requireAuth } from '../auth.js';
 import { storage } from '../storage.js';
 import { APP_CONFIG } from '../config.js';
 import { qs, renderBookingSummary, money } from './common.js';
