@@ -320,8 +320,4 @@ reserveBtn.addEventListener('click', async () => {
 });
 
 loadSeats();
-import { requireAuth } from '../auth.js';
-import { storage } from '../storage.js';
-import { APP_CONFIG } from '../config.js';
-import { qs, renderBookingSummary, money } from './common.js';
 
