@@ -21,12 +21,13 @@
 - [16. Security Model](#security-model)
 - [17. Infrastructure Layout](#infrastructure-layout)
 - [18. Database Bootstrap](#database-bootstrap)
-- [19. Deployment Process](#deployment-process)
-- [20. Local Developement Notes](#local-development-notes)
-- [21. Known Design Choices and TradeOfss](#known-design-choices)
-- [22. Operational Notes](#operational-notes)
-- [23. Future Improvements](#future-improvements)
-- [24. Conclusion](#conclusion)
+- [19. Frontend Design and Configuration](#frontend-design)
+- [20. Deployment Process](#deployment-process)
+- [21. Local Developement Notes](#local-development-notes)
+- [22. Known Design Choices and TradeOfss](#known-design-choices)
+- [23. Operational Notes](#operational-notes)
+- [24. Future Improvements](#future-improvements)
+- [25. Conclusion](#conclusion)
 
 
 ## Overview
@@ -713,6 +714,38 @@ Seed data gives you:
 - seat inventory
 
 This allows end-to-end testing without external fixture generation.
+
+---
+## Static Frontend Design and Configuration
+
+This is a plain HTML/CSS/JS static frontend intended to demonstrate the backend capabilities of the online ticketing system.
+
+### Runtime values
+Update `assets/js/config.js` with the real values for:
+
+- API Gateway base URL
+- Cognito Hosted UI domain
+- Cognito client ID
+- Redirect URI
+- Logout URI
+- AWS region
+
+### Hosting
+This project is designed for static hosting on S3 + CloudFront.
+
+### Routing model
+This frontend uses static pages plus query-string navigation, for example:
+
+- `event-detail.html?event_id=<uuid>`
+- `queue.html?event_id=<uuid>&category_id=<uuid>`
+- `seats.html?event_id=<uuid>&category_id=<uuid>`
+
+### Notes
+- Browse pages are public.
+- Queue, seats, reservation, payment, and booking confirmation require Cognito login.
+- Seat selection UI is capped at 5 seats.
+- On payment failure or confirmation failure the frontend returns to the homepage and leaves cleanup to backend TTL expiry.
+- No My Tickets page is included in this phase.
 
 ---
 
