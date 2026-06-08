@@ -93,19 +93,18 @@ img {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
+  justify-content: flex-start;
   flex: 0 0 auto;
+  min-width: 0;
 }
 
 
 
 .brand-logo {
   display: block;
-  height: 58px;
+  height: 72px;
   width: auto;
-  max-width: 280px;
+  max-width: 360px;
   object-fit: contain;
 }
 

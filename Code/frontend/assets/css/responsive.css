@@ -43,9 +43,9 @@
 
   .brand-logo {
     display: block;
-    height: 48px;
+    height: 58px;
     width: auto;
-    max-width: 240px;
+    max-width: 300px;
     object-fit: contain;
   }
 
@@ -290,7 +290,7 @@
   }
 
   .brand-logo {
-  height: 42px;
-  max-width: 220px;
+  height: 52px;
+  max-width: 260px;
   }
 }
