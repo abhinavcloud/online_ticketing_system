@@ -75,4 +75,3 @@ document.querySelector('#applyFiltersBtn').addEventListener('click', loadEvents)
 if (locationInput.value) {
   loadEvents();
 }
-``

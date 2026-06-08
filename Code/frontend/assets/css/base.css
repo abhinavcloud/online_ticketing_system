@@ -97,6 +97,14 @@ img {
   letter-spacing: 0.02em;
 }
 
+.brand-logo {
+  display: block;
+  height: 42px;
+  width: auto;
+  max-width: 220px;
+  object-fit: contain;
+}
+
 .brand-badge {
   width: 42px;
   height: 42px;

@@ -41,6 +41,14 @@
     justify-content: flex-start;
   }
 
+  .brand-logo {
+    display: block;
+    height: 42px;
+    width: auto;
+    max-width: 220px;
+    object-fit: contain;
+  }
+
   .brand-badge {
     width: 34px;
     height: 34px;
