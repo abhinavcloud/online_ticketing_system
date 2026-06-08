@@ -68,7 +68,12 @@
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x proximity;
-    padding-bottom: 0.25rem;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border-radius: var(--radius);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
   }
 
   .stepper::-webkit-scrollbar {
@@ -76,11 +81,10 @@
   }
 
   .step {
-    flex: 0 0 140px;
+    flex: 0 0 132px;
     white-space: nowrap;
     scroll-snap-align: start;
   }
-
   /* =========================================
      Legend: keep badges in one row with
      horizontal scroll so it feels connected
@@ -112,12 +116,14 @@
   }
 
   .stage,
+  .seat-pager,
   .seat-area-divider,
   .seat-grid {
     min-width: calc((64px * 10) + (0.65rem * 9));
   }
 
   .stage,
+  .seat-pager,
   .seat-area-divider {
     width: max-content;
   }
@@ -130,4 +136,4 @@
   .seat {
     min-width: 64px;
   }
-}
+  }
