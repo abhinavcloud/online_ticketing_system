@@ -480,7 +480,8 @@ def _book_seats_and_insert_tickets(
     total_amount: int,
     event_details: Dict[str, Any],
 ) -> List[str]:
-    """Atomically update seats to BOOKED and insert one ticket row per seat.
+    """Atomically update seats to BOOKED, update reservation to CONFIRMED,
+    and insert one ticket row per seat.
 
     Returns list of generated ticket IDs.
     Raises on any failure; caller must handle compensation.
@@ -503,15 +504,15 @@ def _book_seats_and_insert_tickets(
             with conn.cursor() as cur:
                 cur.execute("BEGIN;")
                 try:
-                    # Lock and update seats to BOOKED
+                    # 1) Update seats to BOOKED
                     cur.execute(
                         """
                         UPDATE public.seats
                         SET status = 'BOOKED', updated_at = now()
                         WHERE event_id = %s
-                        AND category_id = %s
-                        AND seat_label = ANY(%s)
-                        AND status = 'AVAILABLE'
+                          AND category_id = %s
+                          AND seat_label = ANY(%s)
+                          AND status = 'AVAILABLE'
                         """,
                         (event_id, category_id, seat_ids),
                     )
@@ -522,11 +523,30 @@ def _book_seats_and_insert_tickets(
                             f"Expected to book {len(seat_ids)} seats but only {updated} were AVAILABLE"
                         )
 
-                    # Insert one ticket per seat
+                    # 2) Update reservation row from HOLD -> CONFIRMED
+                    cur.execute(
+                        """
+                        UPDATE public.reservations
+                        SET status = 'CONFIRMED',
+                            updated_at = now()
+                        WHERE id = %s
+                          AND status = 'HOLD'
+                        """,
+                        (reservation_id,),
+                    )
+
+                    if cur.rowcount != 1:
+                        cur.execute("ROLLBACK;")
+                        raise ValueError(
+                            f"Reservation not found in HOLD status for confirmation: {reservation_id}"
+                        )
+
+                    # 3) Insert one ticket row per seat
                     ticket_ids = []
                     for seat_label in seat_ids:
                         ticket_id = str(uuid.uuid4())
                         ticket_ids.append(ticket_id)
+
                         cur.execute(
                             """
                             INSERT INTO public.tickets (
@@ -546,11 +566,23 @@ def _book_seats_and_insert_tickets(
                             )
                             """,
                             (
-                                ticket_id, user_id, reservation_id, payment_id,
-                                event_id, category_id, event_details["venueId"], seat_label,
-                                event_details["unitPrice"], total_amount, event_details["currency"],
-                                event_details["eventName"], event_details["eventDate"], event_details["eventTime"],
-                                event_details["venueName"], event_details["venueAddress"], event_details["categoryName"],
+                                ticket_id,
+                                user_id,
+                                reservation_id,
+                                payment_id,
+                                event_id,
+                                category_id,
+                                event_details["venueId"],
+                                seat_label,
+                                event_details["unitPrice"],
+                                total_amount,
+                                event_details["currency"],
+                                event_details["eventName"],
+                                event_details["eventDate"],
+                                event_details["eventTime"],
+                                event_details["venueName"],
+                                event_details["venueAddress"],
+                                event_details["categoryName"],
                             ),
                         )
 
@@ -570,6 +602,7 @@ def _book_seats_and_insert_tickets(
                 _DB_CONN_REFRESH_AT = 0.0
             else:
                 raise
+
 
 
 # ----------------------------

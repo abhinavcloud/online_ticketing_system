@@ -450,6 +450,30 @@ def _insert_failed_reservation(reservation_id: str, user_sub: str, event_id: str
             (reservation_id, user_sub, event_id, category_id, idempotency_key, failure_reason),
         )
 
+def _insert_hold_reservation(
+    reservation_id: str,
+    user_sub: str,
+    event_id: str,
+    category_id: str,
+    idempotency_key: Optional[str] ) -> None:
+    """Insert reservation row with HOLD status.
+
+    This row is required before confirmation inserts ticket rows that reference
+    tickets.reservation_id -> reservations.id.
+    """
+    conn = _db_conn()
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO public.reservations (
+                id, user_id, event_id, category_id, status, idempotency_key, created_at, updated_at
+            )
+            VALUES (%s, %s, %s, %s, 'HOLD', %s, now(), now())
+            ON CONFLICT (id) DO NOTHING
+            """,
+            (reservation_id, user_sub, event_id, category_id, idempotency_key),
+        )
+
 
 # KEYS[1..N-3]: seat lock keys
 # KEYS[N-2]:    reservation seats key (same hash tag -> same cluster slot)
@@ -680,9 +704,8 @@ def handle_reserve(event, context):
         rc = int(rc)
 
         if rc == 2:
-            # Idempotent replay: Lua returns existing reservationId in `info`
+            #Idempotent replay: Lua returns existing reservationId in `info`
             existing_res_id = str(info)
-
             existing_seats_key = _reservation_seats_key(event_id, category_id, existing_res_id)
             existing_meta_key  = _reservation_meta_key(event_id, category_id, existing_res_id)
 
@@ -700,6 +723,22 @@ def handle_reserve(event, context):
 
             meta = json.loads(existing_meta_raw)
             locked_seats = json.loads(existing_seats_raw)
+
+            # Ensure the HOLD reservation row exists in DB for downstream FK integrity.
+            try:
+                _insert_hold_reservation(
+                    reservation_id=existing_res_id,
+                    user_sub=user_sub,
+                    event_id=event_id,
+                    category_id=category_id,
+                    idempotency_key=idem_key_header,
+                )
+            except Exception as e:
+                logger.exception("Failed to persist HOLD reservation on idempotent replay")
+                return _resp(500, {
+                    "error": "RESERVATION_PERSIST_FAILED",
+                    "message": str(e)
+                })
 
             return _resp(200, {
                 "reservationId": existing_res_id,
@@ -722,6 +761,8 @@ def handle_reserve(event, context):
                     "canCancel": True
                 }
             })
+
+
 
         if rc != 1:
             failure = f"Seat already locked: {info}"
@@ -746,16 +787,52 @@ def handle_reserve(event, context):
 
     # Write lookup key so booking service can resolve eventId/categoryId from reservationId alone.
     # This is REQUIRED because confirmation depends on it.
+    
     try:
-        sl.setex(
-            _reservation_lookup_key(reservation_id),
-            seat_lock_ttl,
-            json.dumps({"eventId": event_id, "categoryId": category_id}),
+            sl.setex(
+                _reservation_lookup_key(reservation_id),
+                seat_lock_ttl,
+                json.dumps({"eventId": event_id, "categoryId": category_id}),
+                )
+    except Exception as e:
+            logger.exception("Failed to write reservation lookup key (fatal)")
+
+            # Cleanup everything written in cache for this reservation
+            try:
+                n = len(lock_keys)
+                if n > 0:
+                    new_val = sl.decrby(count_key, n)
+                    if int(new_val) < 0:
+                        logger.warning(f"Seat lock count for {event_id}/{category_id} went negative, resetting to 0")
+                        sl.set(count_key, 0)
+
+                sl.delete(
+                    *lock_keys,
+                    reservation_seats_key,
+                    reservation_meta_key,
+                    idem_key
+                )
+            except Exception:
+                logger.exception("Failed to clean up reservation cache keys after lookup-key failure")
+
+            return _resp(500, {
+                "error": "RESERVATION_LOOKUP_WRITE_FAILED",
+                "message": str(e)
+            })
+
+        # Persist HOLD reservation row in DB so confirmation can safely reference it from tickets.
+    try:
+        _insert_hold_reservation(
+            reservation_id=reservation_id,
+            user_sub=user_sub,
+            event_id=event_id,
+            category_id=category_id,
+            idempotency_key=idem_key_header,
         )
     except Exception as e:
-        logger.exception("Failed to write reservation lookup key (fatal)")
+        logger.exception("Failed to persist HOLD reservation")
 
-        # Cleanup everything written in cache for this reservation
+        # Cleanup cache because reservation DB row is required for later confirmation.
         try:
             n = len(lock_keys)
             if n > 0:
@@ -763,20 +840,22 @@ def handle_reserve(event, context):
                 if int(new_val) < 0:
                     logger.warning(f"Seat lock count for {event_id}/{category_id} went negative, resetting to 0")
                     sl.set(count_key, 0)
-            
+
             sl.delete(
                 *lock_keys,
                 reservation_seats_key,
                 reservation_meta_key,
-                idem_key
+                idem_key,
+                _reservation_lookup_key(reservation_id),
             )
         except Exception:
-            logger.exception("Failed to clean up reservation cache keys after lookup-key failure")
+            logger.exception("Failed to cleanup reservation cache after HOLD DB insert failure")
 
         return _resp(500, {
-            "error": "RESERVATION_LOOKUP_WRITE_FAILED",
+            "error": "RESERVATION_PERSIST_FAILED",
             "message": str(e)
         })
+
     return _resp(200, {
         "reservationId": reservation_id,
         "status": "SUCCESS",
@@ -798,6 +877,7 @@ def handle_reserve(event, context):
             "canCancel": True
         }
     })
+
 
 
 # ----------------------------
