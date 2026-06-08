@@ -16,13 +16,12 @@
     <header class="site-header">
       <div class="inner">
         <a class="brand" href="index.html" aria-label="mytickets.click home">
-          <img
-            src="assets/mytickets_logo.png"
-            alt="mytickets.click"
-            class="brand-logo"
-          />
+            <img
+              src="assets/mytickets_logo.png"
+              alt="mytickets.click"
+              class="brand-logo"
+            />
         </a>
-
         <nav class="nav-links">
           <a class="nav-link" href="index.html">Home</a>
           <a class="nav-link" href="locations.html">Locations</a>
@@ -62,36 +61,26 @@
           <div class="filters grid-3 mb-3">
 
             <div>
-              <label for="locationSelect">City or Location</label>
-              <select id="locationSelect" class="select">
-                <option value="">Loading locations...</option>
-              </select>
+              <label for="locationId">City or Location</label>
+              <input id="locationId" class="input" placeholder="Search by city" />
             </div>
 
             <div>
-              <label for="venueSelect">Venue</label>
-              <select id="venueSelect" class="select" disabled>
-                <option value="">All venues</option>
-              </select>
+              <label for="venueId">Venue (optional)</label>
+              <input id="venueId" class="input" placeholder="Search by venue name" />
             </div>
 
             <div>
-              <label for="performerSelect">Artist or Performer</label>
-              <select id="performerSelect" class="select" disabled>
-                <option value="">All performers</option>
-              </select>
+              <label for="performerId">Artist or Performer (optional)</label>
+              <input id="performerId" class="input" placeholder="Search by artist name" />
             </div>
 
           </div>
 
           <!-- ACTION BUTTONS -->
           <div class="button-row mb-2">
-            <button id="applyFiltersBtn" class="primary-btn" type="button">
+            <button id="applyFiltersBtn" class="primary-btn">
               Search events
-            </button>
-
-            <button id="clearFiltersBtn" class="secondary-btn" type="button">
-              Clear filters
             </button>
 
             <a class="secondary-btn" href="locations.html">
