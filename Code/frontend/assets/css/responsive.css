@@ -19,18 +19,87 @@
 }
 
 @media (max-width: 760px) {
+  /* =========================
+     Page shell / header
+     ========================= */
+  .main {
+    padding: 1rem 0 2rem;
+  }
+
+  .container {
+    width: min(100% - 1rem, var(--max));
+  }
+
   .site-header .inner,
   .site-footer .inner {
     flex-direction: column;
     align-items: stretch;
+    gap: 0.65rem;
+  }
+
+  .brand {
+    justify-content: flex-start;
+  }
+
+  .brand-badge {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
   }
 
   .nav-links {
-    justify-content: space-between;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 0.5rem;
+    padding-bottom: 0.15rem;
   }
 
+  .nav-links::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-link,
+  .ghost-btn,
+  .primary-btn,
+  .secondary-btn,
+  .danger-btn {
+    width: auto;
+    min-width: max-content;
+    min-height: 40px;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.9rem;
+  }
+
+  .nav-links .badge {
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+
+  /* =========================
+     General responsive grids
+     ========================= */
   .hero-title {
-    font-size: 2.3rem;
+    font-size: 2.1rem;
+  }
+
+  .hero-subtitle,
+  .section-subtitle,
+  .helper-text {
+    font-size: 0.95rem;
+  }
+
+  .hero-copy,
+  .hero-side,
+  .section,
+  .form-card,
+  .card,
+  .metric,
+  .list-item,
+  .empty-state,
+  .message-box {
+    padding: 1rem;
   }
 
   .event-grid,
@@ -50,21 +119,19 @@
     flex-direction: column;
   }
 
-  .nav-link,
-  .ghost-btn,
-  .primary-btn,
-  .secondary-btn,
-  .danger-btn {
+  .button-row .primary-btn,
+  .button-row .secondary-btn,
+  .button-row .danger-btn {
     width: 100%;
   }
 
-  /* =========================================
-     Stepper: keep it horizontally connected
-     instead of stacking vertically
-     ========================================= */
+  /* =========================
+     Booking stepper
+     Keep it visually connected on mobile
+     ========================= */
   .stepper {
     display: flex;
-    gap: 0.6rem;
+    gap: 0.55rem;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x proximity;
@@ -81,19 +148,28 @@
   }
 
   .step {
-    flex: 0 0 132px;
+    flex: 0 0 126px;
     white-space: nowrap;
     scroll-snap-align: start;
+    padding: 0.75rem 0.85rem;
+    font-size: 0.88rem;
   }
-  /* =========================================
-     Legend: keep badges in one row with
-     horizontal scroll so it feels connected
-     ========================================= */
+
+  /* =========================
+     Seat selection panel
+     Keep controls and seat map visually grouped
+     ========================= */
+  .checkout-layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
   .legend {
     flex-wrap: nowrap;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     padding-bottom: 0.25rem;
+    margin-bottom: 0.25rem;
   }
 
   .legend::-webkit-scrollbar {
@@ -105,14 +181,26 @@
     white-space: nowrap;
   }
 
-  /* =========================================
-     Seat map: keep 10 seats per row and make
-     Stage + VIP divider + grid behave like one
-     continuous horizontally-scrollable layout
-     ========================================= */
   .seat-layout {
+    display: grid;
+    gap: 0.75rem;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    padding: 0.75rem;
+    margin-left: -0.25rem;
+    margin-right: -0.25rem;
+    border-radius: var(--radius);
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .seat-layout::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .seat-layout::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.18);
+    border-radius: 999px;
   }
 
   .stage,
@@ -122,18 +210,74 @@
     min-width: calc((64px * 10) + (0.65rem * 9));
   }
 
-  .stage,
-  .seat-pager,
+  .stage {
+    width: calc((64px * 10) + (0.65rem * 9));
+  }
+
+  .seat-pager {
+    width: calc((64px * 10) + (0.65rem * 9));
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0;
+  }
+
+  .seat-pager .secondary-btn {
+    width: 100%;
+    min-width: 0;
+    padding: 0.65rem 0.7rem;
+    font-size: 0.82rem;
+  }
+
+  .seat-pager .badge {
+    justify-content: center;
+    white-space: nowrap;
+    min-width: max-content;
+    font-size: 0.82rem;
+  }
+
   .seat-area-divider {
-    width: max-content;
+    width: calc((64px * 10) + (0.65rem * 9));
+    margin: 0.25rem 0 0.85rem 0;
+    padding: 0.85rem 0.75rem;
   }
 
   .seat-grid {
     grid-template-columns: repeat(10, 64px);
     width: max-content;
+    min-width: calc((64px * 10) + (0.65rem * 9));
+    gap: 0.65rem;
   }
 
   .seat {
     min-width: 64px;
+    min-height: 52px;
+    padding: 0.45rem 0.3rem;
+    font-size: 0.76rem;
+    border-radius: 13px;
   }
+
+  #seatSummary {
+    margin-top: 0.5rem;
   }
+}
+
+@media (max-width: 420px) {
+  .container {
+    width: min(100% - 0.75rem, var(--max));
+  }
+
+  .hero-title {
+    font-size: 1.9rem;
+  }
+
+  .step {
+    flex-basis: 118px;
+    font-size: 0.82rem;
+  }
+
+  .seat-layout {
+    padding: 0.65rem;
+  }
+}
