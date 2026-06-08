@@ -1,4 +1,5 @@
-import { api } from '../api.js';import { api } from requireAuth } from '../auth.js';
+import { api } from '../api.js';
+import { requireAuth } from '../auth.js';
 import { storage } from '../storage.js';
 import { APP_CONFIG } from '../config.js';
 import { qs, renderBookingSummary, money } from './common.js';
@@ -32,55 +33,6 @@ function setStatus(title, text, kind = 'info') {
   statusBox.classList.remove('hidden');
 }
 
-/**
- * Parse seat labels like:
- * VIP-1, VIP-20, GEN-3
- * so they can be sorted naturally instead of lexicographically.
- */
-function parseSeatLabel(label) {
-  const value = String(label || '').trim();
-
-  const match = value.match(/^(.+?)-(\d+)$/);
-  if (match) {
-    return {
-      prefix: match[1].trim(),
-      number: parseInt(match[2], 10),
-      raw: value,
-    };
-  }
-
-  return {
-    prefix: value,
-    number: Number.MAX_SAFE_INTEGER,
-    raw: value,
-  };
-}
-
-/**
- * Human-friendly seat sorting:
- * VIP-1 < VIP-2 < VIP-10
- */
-function compareSeatLabels(a, b) {
-  const pa = parseSeatLabel(a);
-  const pb = parseSeatLabel(b);
-
-  const prefixCompare = pa.prefix.localeCompare(pb.prefix, undefined, {
-    sensitivity: 'base',
-    numeric: true,
-  });
-
-  if (prefixCompare !== 0) return prefixCompare;
-  if (pa.number !== pb.number) return pa.number - pb.number;
-
-  return pa.raw.localeCompare(pb.raw, undefined, {
-    sensitivity: 'base',
-    numeric: true,
-  });
-}
-
-/**
- * Normalize backend seat payload into a consistent frontend model.
- */
 function normalizeSeats(payload) {
   const seats = Array.isArray(payload?.seats)
     ? payload.seats
@@ -88,36 +40,13 @@ function normalizeSeats(payload) {
       ? payload
       : [];
 
-  const normalized = seats.map((seat, index) => ({
+  return seats.map((seat, index) => ({
     id: seat.id || seat.seatId || seat.seat_label || seat.seatLabel || `seat-${index + 1}`,
     label: seat.seat_label || seat.seatLabel || seat.label || seat.seatId || `Seat ${index + 1}`,
     status: (seat.status || seat.effectiveStatus || seat.availability || 'AVAILABLE').toUpperCase(),
   }));
-
-  normalized.sort((a, b) => compareSeatLabels(a.label, b.label));
-  return normalized;
 }
 
-/**
- * Determine whether the current page is rendering GENERAL seats.
- * We use booking.categoryName if available, and fall back to seat label prefix.
- */
-function isGeneralSeatView() {
-  const { booking } = getBookingContext();
-  const categoryName = String(booking?.categoryName || '').trim().toUpperCase();
-
-  if (categoryName === 'GENERAL' || categoryName === 'GEN') {
-    return true;
-  }
-
-  // Fallback: infer from first seat label
-  const firstSeat = seatIndex[0]?.label || '';
-  return /^GEN-/i.test(firstSeat);
-}
-
-/**
- * Update the sidebar summary.
- */
 function selectedSummary() {
   const { booking } = getBookingContext();
   const unitPrice = booking.unitPrice || 0;
@@ -139,50 +68,14 @@ function selectedSummary() {
     const note = document.createElement('div');
     note.className = 'message-box info mt-2';
     note.innerHTML =
-      `<h3 class="mt-0">Your Selection</h3>` +
-      `<p class="mb-0">${selected.length}/${APP_CONFIG.maxSeatSelection} seats selected. Estimated total ${money(total, currency)}.</p>`;
+      `<h3 class="mt-0">Selection</h3>` +
+      `<p class="mb-0">${selected.length}/${APP_CONFIG.maxSeatSelection} seats selected. Estimated amount ${money(total, currency)}.</p>`;
     extra.appendChild(note);
   }
 }
 
-/**
- * Build the HTML for a full-width divider block that visually separates
- * the GENERAL seats from the front VIP section.
- */
-function vipDividerMarkup() {
-  return `
-    <div
-      class="seat-area-divider"
-      style="
-        grid-column: 1 / -1;
-        margin: 8px 0 18px 0;
-        padding: 14px 12px;
-        border-radius: 12px;
-        background: rgba(255,255,255,0.06);
-        border: 1px solid rgba(255,255,255,0.12);
-        text-align: center;
-      "
-    >
-      <div style="font-weight: 700; font-size: 14px; letter-spacing: 0.3px;">VIP Seats</div>
-      <div style="font-size: 12px; opacity: 0.75; margin-top: 4px;">
-        Premium seats are located closer to the stage
-      </div>
-    </div>
-  `;
-}
-
-/**
- * Render seat grid with exactly 20 seats per row.
- * For GENERAL seats, insert a VIP block between stage and the seat rows.
- */
 function renderGrid() {
-  // Force exactly 20 seats per row
-  grid.style.display = 'grid';
-  grid.style.gridTemplateColumns = 'repeat(20, minmax(0, 1fr))';
-
-  const generalView = isGeneralSeatView();
-
-  const seatsMarkup = seatIndex.map(seat => {
+  grid.innerHTML = seatIndex.map(seat => {
     const isSelected = selected.includes(seat.label);
 
     let css = 'available';
@@ -194,14 +87,11 @@ function renderGrid() {
       <button
         class="seat ${css}"
         ${css !== 'available' && css !== 'selected' ? 'disabled' : ''}
-        data-seat-label="${seat.label}"
-      >
+        data-seat-label="${seat.label}">
         ${seat.label}
       </button>
     `;
   }).join('');
-
-  grid.innerHTML = `${generalView ? vipDividerMarkup() : ''}${seatsMarkup}`;
 
   grid.querySelectorAll('[data-seat-label]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -213,13 +103,12 @@ function renderGrid() {
         if (selected.length >= APP_CONFIG.maxSeatSelection) {
           setStatus(
             'Selection limit reached',
-            `You can select up to ${APP_CONFIG.maxSeatSelection} seats at a time.`,
+            `Only ${APP_CONFIG.maxSeatSelection} seats can be selected from the UI in this phase.`,
             'warning'
           );
           return;
         }
         selected.push(label);
-        selected.sort(compareSeatLabels);
       }
 
       renderGrid();
@@ -228,16 +117,13 @@ function renderGrid() {
   });
 }
 
-/**
- * Load seat map from backend.
- */
 async function loadSeats() {
   const { booking, eventId, categoryId, bookingToken } = getBookingContext();
 
   if (!eventId || !categoryId) {
     setStatus(
-      'Missing booking details',
-      'Event or category details are missing. Please go back and start again.',
+      'Missing booking context',
+      'Event or category context is missing. Go back to event details and start the flow again.',
       'warning'
     );
     return;
@@ -245,8 +131,8 @@ async function loadSeats() {
 
   if (!bookingToken) {
     setStatus(
-      'Session expired',
-      'Your booking session is no longer active. Please start again.',
+      'Missing booking token',
+      'Queue session token was not found in browser storage. This usually means the queue state was not persisted before redirect or was lost before seat selection.',
       'warning'
     );
 
@@ -257,7 +143,7 @@ async function loadSeats() {
   }
 
   storage.patchBooking({ eventId, categoryId });
-  selected = [...(booking.selectedSeats || [])].sort(compareSeatLabels);
+  selected = [...(booking.selectedSeats || [])];
 
   try {
     const payload = await api.getSeats({ eventId, categoryId, bookingToken });
@@ -265,10 +151,10 @@ async function loadSeats() {
 
     if (!seatIndex.length) {
       setStatus(
-        'No seats available',
+        'No seats returned',
         payload?.status === 'WAITING'
-          ? (payload.message || 'Please wait a moment and try again.')
-          : 'No seats could be loaded for this event right now.',
+          ? (payload.message || 'You are not admitted yet. Please return to queue flow.')
+          : 'Seat availability API returned an empty payload. Verify seat response shape or queue admission state.',
         'warning'
       );
     }
@@ -278,8 +164,8 @@ async function loadSeats() {
   } catch (error) {
     if (error.status === 401 || error.status === 403) {
       setStatus(
-        'Session expired',
-        error.message || 'Your booking session is no longer valid.',
+        'Session invalid or expired',
+        error.message || 'Seat selection is no longer authorized for this queue session.',
         'danger'
       );
 
@@ -289,25 +175,22 @@ async function loadSeats() {
       return;
     }
 
-    setStatus('Unable to load seats', error.message || 'Please try again.', 'danger');
+    setStatus('Failed to load seat map', error.message, 'danger');
   }
 }
 
-/**
- * Reserve selected seats.
- */
 reserveBtn.addEventListener('click', async () => {
   const { booking, eventId, categoryId, bookingToken } = getBookingContext();
 
   if (!selected.length) {
-    setStatus('No seats selected', 'Please select at least one seat to continue.', 'warning');
+    setStatus('No seats selected', 'Choose at least one available seat before reserving.', 'warning');
     return;
   }
 
   if (!bookingToken) {
     setStatus(
-      'Session expired',
-      'Your booking session is no longer active. Please start again.',
+      'Missing booking token',
+      'Queue session token is missing. Please restart the booking flow.',
       'danger'
     );
     return;
@@ -351,28 +234,28 @@ reserveBtn.addEventListener('click', async () => {
     window.location.href = 'reservation-review.html';
   } catch (error) {
     console.error('reserveTicket failed', {
-      status: error.status,
-      message: error.message,
-      payload: error.payload
-    });
+    status: error.status,
+    message: error.message,
+    payload: error.payload
+  });
 
-    const backendError = error.payload?.error || '';
-    const backendMessage = error.payload?.message || error.message || 'Reservation failed';
+  const backendError = error.payload?.error || '';
+  const backendMessage = error.payload?.message || error.message || 'Reservation failed';
 
-    if (
-      error.status === 409 ||
-      backendError === 'SEAT_CONFLICT' ||
-      backendError === 'SEATS_NOT_AVAILABLE' ||
-      backendError === 'RESERVATION_CONFLICT'
-    ) {
-      window.location.href = 'reservation-conflict.html';
-      return;
-    }
+  if (
+    error.status === 409 ||
+    backendError === 'SEAT_CONFLICT' ||
+    backendError === 'SEATS_NOT_AVAILABLE' ||
+    backendError === 'RESERVATION_CONFLICT'
+  ) {
+    window.location.href = 'reservation-conflict.html';
+    return;
+  }
 
-    setStatus('Reservation failed', backendMessage, 'danger');
+  setStatus('Reservation failed', backendMessage, 'danger');
   } finally {
     reserveBtn.disabled = false;
-    reserveBtn.textContent = 'Continue with selected seats';
+    reserveBtn.textContent = 'Reserve selected seats';
   }
 });
 
