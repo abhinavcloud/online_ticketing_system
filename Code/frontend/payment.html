@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><!DOCTYPE htmlen">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,86 +6,122 @@
   <link rel="stylesheet" href="assets/css/base.css" />
   <link rel="stylesheet" href="assets/css/responsive.css" />
 </head>
+
 <body>
   <div class="page-shell">
+
     <header class="site-header">
       <div class="inner">
         <a class="brand" href="index.html">
           <span class="brand-badge" aria-hidden="true"></span>
-          <span>Online Ticketing System</span>
+          <span>MyTickets</span>
         </a>
+
         <nav class="nav-links">
           <a class="nav-link" href="index.html">Home</a>
           <a class="nav-link" href="locations.html">Locations</a>
           <a class="nav-link" href="events.html">Events</a>
-          <span class="badge hidden" data-auth="true">Signed in as <span data-auth-profile class="muted">User</span></span>
-          <a class="nav-link" href="login.html" data-guest="true" data-action="login">Login</a>
-          <a class="nav-link hidden" href="#" data-auth="true" data-action="logout">Logout</a>
+
+          <span class="badge hidden" data-auth="true">
+            Welcome, <span data-auth-profile class="muted">User</span>
+          </span>
+
+          <a class="nav-link" href="login.html" data-guest="true">Login</a>
+          <a class="nav-link hidden" href="#" data-auth="true">Logout</a>
         </nav>
       </div>
     </header>
 
     <main class="main">
-<div class="container">
-  <div class="stepper">
-    <div class="step">Queue</div>
-    <div class="step">Seats</div>
-    <div class="step">Reservation</div>
-    <div class="step active">Payment</div>
-    <div class="step">Confirmation</div>
-    <div class="step">Success</div>
-  </div>
+      <div class="container">
 
-  <div class="checkout-layout">
-    <section class="panel section">
-      <span class="badge brand">Mock Payment</span>
-      <h1 class="hero-title mt-2">Payment</h1>
-      <p class="hero-subtitle">This is a frontend shell over the mock payment service. Payment success still requires confirmation service to finalize booking.</p>
-
-      <div id="paymentStatusBox" class="message-box info hidden"></div>
-
-      <div class="form-card mt-3">
-        <div class="grid-2">
-          <div>
-            <label for="cardName">Cardholder name</label>
-            <input id="cardName" class="input" placeholder="Demo User" />
-          </div>
-          <div>
-            <label for="cardNumber">Card number</label>
-            <input id="cardNumber" class="input" placeholder="4111 1111 1111 1111" />
-          </div>
+        <!-- STEPPER -->
+        <div class="stepper">
+          <div class="step">Queue</div>
+          <div class="step">Seats</div>
+          <div class="step">Review</div>
+          <div class="step active">Payment</div>
+          <div class="step">Confirmation</div>
+          <div class="step">Success</div>
         </div>
-        <div class="grid-2 mt-2">
-          <div>
-            <label for="expiry">Expiry</label>
-            <input id="expiry" class="input" placeholder="12/30" />
-          </div>
-          <div>
-            <label for="cvv">CVV</label>
-            <input id="cvv" class="input" placeholder="123" />
-          </div>
+
+        <div class="checkout-layout">
+
+          <!-- LEFT SIDE -->
+          <section class="panel section">
+            <span class="badge brand">Secure Checkout</span>
+
+            <h1 class="hero-title mt-2">Complete Your Payment</h1>
+
+            <p class="hero-subtitle">
+              Enter your card details below to confirm your booking.  
+              Your seats will be reserved once the payment is successful.
+            </p>
+
+            <div id="paymentStatusBox" class="message-box info hidden"></div>
+
+            <div class="form-card mt-3">
+
+              <div class="grid-2">
+                <div>
+                  <label for="cardName">Cardholder name</label>
+                  <input id="cardName" class="input" placeholder="John Doe" />
+                </div>
+
+                <div>
+                  <label for="cardNumber">Card number</label>
+                  <input id="cardNumber" class="input" placeholder="1234 5678 9012 3456" />
+                </div>
+              </div>
+
+              <div class="grid-2 mt-2">
+                <div>
+                  <label for="expiry">Expiry date</label>
+                  <input id="expiry" class="input" placeholder="MM/YY" />
+                </div>
+
+                <div>
+                  <label for="cvv">CVV</label>
+                  <input id="cvv" class="input" placeholder="123" />
+                </div>
+              </div>
+
+            </div>
+
+            <div class="button-row mt-3">
+              <button id="payNowBtn" class="primary-btn">
+                Pay Now
+              </button>
+
+              <a class="secondary-btn" href="index.html">
+                Cancel and go home
+              </a>
+            </div>
+
+            <p class="helper-text mt-2">
+              🔒 Your payment is secure and encrypted
+            </p>
+
+          </section>
+
+          <!-- RIGHT SIDE -->
+          <aside id="paymentSummary"></aside>
+
         </div>
-      </div>
 
-      <div class="button-row mt-3">
-        <button id="payNowBtn" class="primary-btn">Pay now</button>
-        <a class="secondary-btn" href="index.html">Go home</a>
       </div>
-    </section>
-
-    <aside id="paymentSummary"></aside>
-  </div>
-</div>
-</main>
+    </main>
 
     <footer class="site-footer">
       <div class="inner">
-        <div class="muted">Static frontend demo for backend showcase</div>
-        <div class="muted">Hosted with S3 + CloudFront</div>
+        <div class="muted">© MyTickets</div>
+        <div class="muted">Safe and secure event booking</div>
       </div>
     </footer>
+
   </div>
 
   <script type="module" src="assets/js/pages/payment.js"></script>
 </body>
 </html>
+

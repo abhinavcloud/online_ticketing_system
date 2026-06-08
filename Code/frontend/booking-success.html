@@ -3,65 +3,124 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Booking Success</title>
+  <title>Booking Confirmed</title>
+
   <link rel="stylesheet" href="assets/css/base.css" />
   <link rel="stylesheet" href="assets/css/responsive.css" />
 </head>
+
 <body>
   <div class="page-shell">
+
+    <!-- HEADER -->
     <header class="site-header">
       <div class="inner">
         <a class="brand" href="index.html">
           <span class="brand-badge" aria-hidden="true"></span>
-          <span>Online Ticketing System</span>
+          <span>MyTickets</span>
         </a>
+
         <nav class="nav-links">
           <a class="nav-link" href="index.html">Home</a>
           <a class="nav-link" href="locations.html">Locations</a>
           <a class="nav-link" href="events.html">Events</a>
-          <span class="badge hidden" data-auth="true">Signed in as <span data-auth-profile class="muted">User</span></span>
+
+          <span class="badge hidden" data-auth="true">
+            Welcome, <span data-auth-profile class="muted">User</span>
+          </span>
+
           <a class="nav-link" href="login.html" data-guest="true" data-action="login">Login</a>
           <a class="nav-link hidden" href="#" data-auth="true" data-action="logout">Logout</a>
         </nav>
       </div>
     </header>
 
+    <!-- MAIN -->
     <main class="main">
-<div class="container">
-  <div class="stepper">
-    <div class="step">Queue</div>
-    <div class="step">Seats</div>
-    <div class="step">Reservation</div>
-    <div class="step">Payment</div>
-    <div class="step">Confirmation</div>
-    <div class="step active">Success</div>
-  </div>
+      <div class="container">
 
-  <div class="checkout-layout">
-    <section class="panel section">
-      <span class="badge success">Booking Confirmed</span>
-      <h1 class="hero-title mt-2">Your booking is complete</h1>
-      <p class="hero-subtitle">This page is shown only after confirmation service succeeds and durable booking is written to the backend.</p>
-      <div id="successContent"></div>
-      <div class="button-row mt-3">
-        <a class="primary-btn" href="index.html">Return to home</a>
-        <a class="secondary-btn" href="events.html">Browse more events</a>
+        <!-- STEPPER -->
+        <div class="stepper">
+          <div class="step">Queue</div>
+          <div class="step">Seats</div>
+          <div class="step">Review</div>
+          <div class="step">Payment</div>
+          <div class="step">Confirmation</div>
+          <div class="step active">Success</div>
+        </div>
+
+        <div class="checkout-layout">
+
+          <!-- LEFT SECTION -->
+          <section class="panel section">
+
+            <span class="badge success">Booking confirmed</span>
+
+            <h1 class="hero-title mt-2">
+              🎉 Your booking is confirmed!
+            </h1>
+
+            <p class="hero-subtitle">
+              Your tickets have been successfully booked.  
+              You’re all set for an amazing experience!
+            </p>
+
+            <!-- SUCCESS CONTENT (FILLED BY JS) -->
+            <div id="successContent" class="mt-3"></div>
+
+            <!-- INFO BOX -->
+            <div class="message-box info mt-3">
+              <p class="mb-0">
+                ✅ Your seats are confirmed  
+                🎟️ Tickets are generated successfully  
+                📅 Enjoy your event!
+              </p>
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div class="button-row mt-3">
+              <a class="primary-btn" href="events.html">
+                Book more events
+              </a>
+
+              <a class="secondary-btn" href="index.html">
+                Back to home
+              </a>
+            </div>
+
+          </section>
+
+          <!-- RIGHT SIDE -->
+          <aside id="successSummary" class="panel section">
+
+            <h3 class="mt-0">Booking summary</h3>
+
+            <div class="message-box info mt-2">
+              <p class="mb-0">
+                📩 Your booking details are displayed here  
+                🔐 Keep them safe for entry to the event
+              </p>
+            </div>
+
+          </aside>
+
+        </div>
+
       </div>
-    </section>
+    </main>
 
-    <aside id="successSummary"></aside>
-  </div>
-</div>
-</main>
-
+    <!-- FOOTER -->
     <footer class="site-footer">
       <div class="inner">
-        <div class="muted">Static frontend demo for backend showcase</div>
-        <div class="muted">Hosted with S3 + CloudFront</div>
+        <div class="muted">© MyTickets</div>
+        <div class="muted">Enjoy your event experience</div>
       </div>
     </footer>
+
   </div>
 
+  <!-- SCRIPT -->
   <script type="module" src="assets/js/pages/booking-success.js"></script>
+
 </body>
 </html>

@@ -1,60 +1,96 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
+<html <meta charset="UTF-8" /><html lang="en">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Finalizing Booking</title>
+  <title>Processing Your Booking</title>
+
   <link rel="stylesheet" href="assets/css/base.css" />
   <link rel="stylesheet" href="assets/css/responsive.css" />
 </head>
+
 <body>
   <div class="page-shell">
+
+    <!-- HEADER -->
     <header class="site-header">
       <div class="inner">
         <a class="brand" href="index.html">
           <span class="brand-badge" aria-hidden="true"></span>
-          <span>Online Ticketing System</span>
+          <span>MyTickets</span>
         </a>
+
         <nav class="nav-links">
           <a class="nav-link" href="index.html">Home</a>
           <a class="nav-link" href="locations.html">Locations</a>
           <a class="nav-link" href="events.html">Events</a>
-          <span class="badge hidden" data-auth="true">Signed in as <span data-auth-profile class="muted">User</span></span>
+
+          <span class="badge hidden" data-auth="true">
+            Welcome, <span data-auth-profile class="muted">User</span>
+          </span>
+
           <a class="nav-link" href="login.html" data-guest="true" data-action="login">Login</a>
           <a class="nav-link hidden" href="#" data-auth="true" data-action="logout">Logout</a>
         </nav>
       </div>
     </header>
 
+    <!-- MAIN -->
     <main class="main">
-<div class="container">
-  <div class="stepper">
-    <div class="step">Queue</div>
-    <div class="step">Seats</div>
-    <div class="step">Reservation</div>
-    <div class="step">Payment</div>
-    <div class="step active">Confirmation</div>
-    <div class="step">Success</div>
-  </div>
+      <div class="container">
 
-  <section class="section panel">
-    <div class="form-card">
-      <div class="loader"></div>
-      <h1 class="hero-title mt-3">Finalizing your booking</h1>
-      <p id="bookingProcessingMessage" class="hero-subtitle mb-0">Calling confirmation service to validate locks, book seats, and create tickets.</p>
-    </div>
-  </section>
-</div>
-</main>
+        <!-- STEPPER -->
+        <div class="stepper">
+          <div class="step">Queue</div>
+          <div class="step">Seats</div>
+          <div class="step">Review</div>
+          <div class="step">Payment</div>
+          <div class="step active">Confirmation</div>
+          <div class="step">Success</div>
+        </div>
 
+        <section class="section panel">
+          <div class="form-card">
+
+            <!-- LOADER -->
+            <div class="loader"></div>
+
+            <!-- TITLE -->
+            <h1 class="hero-title mt-3">
+              Processing your booking...
+            </h1>
+
+            <!-- MAIN MESSAGE -->
+            <p id="bookingProcessingMessage" class="hero-subtitle mb-0">
+              Please wait while we confirm your seats and complete your booking.
+            </p>
+
+            <!-- INFO BOX -->
+            <div class="message-box info mt-3">
+              <p class="mb-0">
+                ⚡ This usually takes a few seconds  
+                🔒 Do not refresh or close this page  
+                ✅ You will be redirected automatically
+              </p>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- FOOTER -->
     <footer class="site-footer">
       <div class="inner">
-        <div class="muted">Static frontend demo for backend showcase</div>
-        <div class="muted">Hosted with S3 + CloudFront</div>
+        <div class="muted">© MyTickets</div>
+        <div class="muted">Secure and reliable booking experience</div>
       </div>
     </footer>
+
   </div>
 
+  <!-- SCRIPT -->
   <script type="module" src="assets/js/pages/booking-processing.js"></script>
+
 </body>
 </html>
+<head>

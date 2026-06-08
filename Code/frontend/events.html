@@ -4,73 +4,110 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Events</title>
+
   <link rel="stylesheet" href="assets/css/base.css" />
   <link rel="stylesheet" href="assets/css/responsive.css" />
 </head>
+
 <body>
   <div class="page-shell">
+
+    <!-- HEADER -->
     <header class="site-header">
       <div class="inner">
         <a class="brand" href="index.html">
           <span class="brand-badge" aria-hidden="true"></span>
-          <span>Online Ticketing System</span>
+          <span>MyTickets</span>
         </a>
+
         <nav class="nav-links">
           <a class="nav-link" href="index.html">Home</a>
           <a class="nav-link" href="locations.html">Locations</a>
           <a class="nav-link" href="events.html">Events</a>
-          <span class="badge hidden" data-auth="true">Signed in as <span data-auth-profile class="muted">User</span></span>
+
+          <span class="badge hidden" data-auth="true">
+            Welcome, <span data-auth-profile class="muted">User</span>
+          </span>
+
           <a class="nav-link" href="login.html" data-guest="true" data-action="login">Login</a>
           <a class="nav-link hidden" href="#" data-auth="true" data-action="logout">Logout</a>
         </nav>
       </div>
     </header>
 
+    <!-- MAIN -->
     <main class="main">
-<div class="container">
-  <section class="section panel">
-    <div class="section-header">
-      <div>
-        <span class="badge brand">Public Browse</span>
-        <h1 class="section-title mt-2">Events</h1>
-        <p class="section-subtitle mb-0">Filter by location, venue, and performer. This page is driven by the browse service event query.</p>
-      </div>
-    </div>
+      <div class="container">
 
-    <div class="filters grid-3 mb-3">
-      <div>
-        <label for="locationId">Location ID</label>
-        <input id="locationId" class="input" placeholder="UUID from location browse response" />
-      </div>
-      <div>
-        <label for="venueId">Venue ID</label>
-        <input id="venueId" class="input" placeholder="Optional venue UUID" />
-      </div>
-      <div>
-        <label for="performerId">Performer ID</label>
-        <input id="performerId" class="input" placeholder="Optional performer UUID" />
-      </div>
-    </div>
+        <section class="section panel">
 
-    <div class="button-row mb-2">
-      <button id="applyFiltersBtn" class="primary-btn">Load Events</button>
-      <a class="secondary-btn" href="locations.html">Browse locations first</a>
-    </div>
+          <div class="section-header">
+            <div>
+              <span class="badge brand">Discover events</span>
 
-    <div id="eventsStatus" class="message-box info hidden"></div>
-    <div id="eventsGrid" class="event-grid mt-2"></div>
-  </section>
-</div>
-</main>
+              <h1 class="section-title mt-2">
+                Explore Events
+              </h1>
 
+              <p class="section-subtitle mb-0">
+                Browse concerts, shows, and live events happening near you.
+              </p>
+            </div>
+          </div>
+
+          <!-- FILTERS -->
+          <div class="filters grid-3 mb-3">
+
+            <div>
+              <label for="locationId">City or Location</label>
+              <input id="locationId" class="input" placeholder="Search by city" />
+            </div>
+
+            <div>
+              <label for="venueId">Venue (optional)</label>
+              <input id="venueId" class="input" placeholder="Search by venue name" />
+            </div>
+
+            <div>
+              <label for="performerId">Artist or Performer (optional)</label>
+              <input id="performerId" class="input" placeholder="Search by artist name" />
+            </div>
+
+          </div>
+
+          <!-- ACTION BUTTONS -->
+          <div class="button-row mb-2">
+            <button id="applyFiltersBtn" class="primary-btn">
+              Search events
+            </button>
+
+            <a class="secondary-btn" href="locations.html">
+              Browse by location
+            </a>
+          </div>
+
+          <!-- STATUS -->
+          <div id="eventsStatus" class="message-box info hidden"></div>
+
+          <!-- EVENTS GRID -->
+          <div id="eventsGrid" class="event-grid mt-2"></div>
+
+        </section>
+
+      </div>
+    </main>
+
+    <!-- FOOTER -->
     <footer class="site-footer">
       <div class="inner">
-        <div class="muted">Static frontend demo for backend showcase</div>
-        <div class="muted">Hosted with S3 + CloudFront</div>
+        <div class="muted">© MyTickets</div>
+        <div class="muted">Discover and book amazing events</div>
       </div>
     </footer>
+
   </div>
 
+  <!-- SCRIPT -->
   <script type="module" src="assets/js/pages/events.js"></script>
 </body>
 </html>

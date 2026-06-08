@@ -1,66 +1,114 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login</title>
-  <link rel="stylesheet" href="assets/css/base.css" />
-  <link rel="stylesheet" href="assets/css/responsive.css" />
+  charse"UTF-8" />
+  content="-width, initial-scale=1.0" />
+  assets/css/base.css
+  assets/css/responsive.css
 </head>
+
 <body>
   <div class="page-shell">
+
     <header class="site-header">
       <div class="inner">
-        <a class="brand" href="index.html">
+        .html">
           <span class="brand-badge" aria-hidden="true"></span>
-          <span>Online Ticketing System</span>
+          <span>MyTickets</span>
         </a>
+
         <nav class="nav-links">
-          <a class="nav-link" href="index.html">Home</a>
-          <a class="nav-link" href="locations.html">Locations</a>
-          <a class="nav-link" href="events.html">Events</a>
-          <span class="badge hidden" data-auth="true">Signed in as <span data-auth-profile class="muted">User</span></span>
-          <a class="nav-link" href="login.html" data-guest="true" data-action="login">Login</a>
-          <a class="nav-link hidden" href="#" data-auth="true" data-action="logout">Logout</a>
+          Home</a>
+          href="locations.html">Locations</a>
+           href="events.html">Events</a>
+
+          <span class="badge hidden" data-auth="true">
+            Welcome, <span data-auth-profile class="muted">User</span>
+          </span>
+
+          
+          #Logout</a>
         </nav>
       </div>
     </header>
 
     <main class="main">
-<div class="container">
-  <section class="section panel">
-    <div class="grid-2">
-      <div class="form-card">
-        <span class="badge brand">Authentication</span>
-        <h1 class="hero-title mt-2">Login to continue booking</h1>
-        <p class="hero-subtitle">Public browse does not need login. Queue, seat selection, reservation, payment, and confirmation all require Cognito-authenticated access.</p>
-        <div class="button-row mt-3">
-          <button class="primary-btn" data-action="login">Continue with Google via Cognito Hosted UI</button>
-          <a class="secondary-btn" href="index.html">Back to Home</a>
-        </div>
+      <div class="container">
+
+        <section class="section panel">
+          <div class="grid-2">
+
+            <!-- LEFT SIDE -->
+            <div class="form-card">
+              <span class="badge brand">Secure login</span>
+
+              <h1 class="hero-title mt-2">
+                Sign in to continue
+              </h1>
+
+              <p class="hero-subtitle">
+                Sign in to select your seats, complete payment, and confirm your booking.
+              </p>
+
+              <div class="button-row mt-3">
+                <button class="primary-btn" data-action="login               </button>
+
+                <a class="secondary-btn" href="index.html">
+                  Back to Home
+                </a>
+              </div>
+
+              <p class="helper-text mt-2">
+                We use secure authentication to keep your bookings safe.
+              </p>
+            </div>
+
+            <!-- RIGHT SIDE -->
+            <div class="form-card">
+              <h3 class="mt-0">What happens next?</h3>
+
+              <ul class="summary-list">
+
+                <li class="summary-item">
+                  <span class="muted">Step 1</span>
+                  <strong>Choose your Google account</strong>
+                </li>
+
+                <li class="summary-item">
+                  <span class="muted">Step 2</span>
+                  <strong>Sign in securely</strong>
+                </li>
+
+                <li class="summary-item">
+                  <span class="muted">Step 3</span>
+                  <strong>Return to continue your booking</strong>
+                </li>
+
+              </ul>
+
+              <div class="message-box info mt-2">
+                <h3 class="mt-0">Quick & easy</h3>
+                <p class="helper-text mb-0">
+                  You only need to sign in once to complete your booking. The process is fast and secure.
+                </p>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
       </div>
-      <div class="form-card">
-        <h3 class="mt-0">What happens next</h3>
-        <ul class="summary-list">
-          <li class="summary-item"><span class="muted">Step 1</span><strong>Browser redirects to Cognito Hosted UI</strong></li>
-          <li class="summary-item"><span class="muted">Step 2</span><strong>Google sign-in completes</strong></li>
-          <li class="summary-item"><span class="muted">Step 3</span><strong>Callback page stores tokens in browser</strong></li>
-          <li class="summary-item"><span class="muted">Step 4</span><strong>Frontend resumes booking flow</strong></li>
-        </ul>
-      </div>
-    </div>
-  </section>
-</div>
-</main>
+    </main>
 
     <footer class="site-footer">
       <div class="inner">
-        <div class="muted">Static frontend demo for backend showcase</div>
-        <div class="muted">Hosted with S3 + CloudFront</div>
+        <div class="muted">© MyTickets</div>
+        <div class="muted">Safe and secure event booking</div>
       </div>
     </footer>
-  </div>
 
+  </div>
   <script type="module" src="assets/js/pages/login.js"></script>
 </body>
 </html>

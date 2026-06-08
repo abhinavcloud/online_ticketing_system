@@ -1,55 +1,85 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Reservation Conflict</title>
-  <link rel="stylesheet" href="assets/css/base.css" />
-  <link rel="stylesheet" href="assets/css/responsive.css" />
+  <title>Seats Unavailable</title>
+  assets/css/base.css
+  assets/css/responsive.css
 </head>
+
 <body>
   <div class="page-shell">
+
     <header class="site-header">
       <div class="inner">
         <a class="brand" href="index.html">
           <span class="brand-badge" aria-hidden="true"></span>
-          <span>Online Ticketing System</span>
+          <span>MyTickets</span>
         </a>
+
         <nav class="nav-links">
           <a class="nav-link" href="index.html">Home</a>
           <a class="nav-link" href="locations.html">Locations</a>
           <a class="nav-link" href="events.html">Events</a>
-          <span class="badge hidden" data-auth="true">Signed in as <span data-auth-profile class="muted">User</span></span>
-          <a class="nav-link" href="login.html" data-guest="true" data-action="login">Login</a>
-          <a class="nav-link hidden" href="#" data-auth="true" data-action="logout">Logout</a>
+
+          <span class="badge hidden" data-auth="true">
+            Welcome, <span data-auth-profile class="muted">User</span>
+          </span>
+
+          <a class="nav-link" href="login.html" data-guest="true">Login</a>
+          <a class="nav-link hidden" href="#">Logout</a>
         </nav>
       </div>
     </header>
 
     <main class="main">
-<div class="container">
-  <section class="section panel">
-    <div class="message-box danger">
-      <span class="badge danger">Reservation Failed</span>
-      <h1 class="hero-title mt-2">Selected seats are no longer available</h1>
-      <p class="hero-subtitle">The backend reservation flow is all-or-nothing. If any selected seat is locked or unavailable, the entire reservation is rejected.</p>
-      <div class="button-row mt-3">
-        <a class="primary-btn" href="index.html">Return to home</a>
-        <a class="secondary-btn" href="events.html">Browse events again</a>
+      <div class="container">
+
+        <section class="section panel">
+          <div class="message-box danger">
+
+            <span class="badge danger">Seats unavailable</span>
+
+            <h1 class="hero-title mt-2">
+              Sorry, those seats are no longer available
+            </h1>
+
+            <p class="hero-subtitle">
+              One or more of the seats you selected has just been booked by another user.  
+              Please choose different seats to continue your booking.
+            </p>
+
+            <div class="message-box info mt-3">
+              <p class="mb-0">
+                💡 Tip: Select seats quickly to increase your chances during high demand events.
+              </p>
+            </div>
+
+            <div class="button-row mt-3">
+              <a class="primary-btn" href="events.html">
+                Try again
+              </a>
+
+              <a class="secondary-btn" href="index.html">
+                Back to home
+              </a>
+            </div>
+
+          </div>
+        </section>
+
       </div>
-    </div>
-  </section>
-</div>
-</main>
+    </main>
 
     <footer class="site-footer">
       <div class="inner">
-        <div class="muted">Static frontend demo for backend showcase</div>
-        <div class="muted">Hosted with S3 + CloudFront</div>
+        <div class="muted">© MyTickets</div>
+        <div class="muted">Helping you book events easily</div>
       </div>
     </footer>
-  </div>
 
+  </div>
   <script type="module" src="assets/js/pages/reservation-conflict.js"></script>
+
 </body>
 </html>

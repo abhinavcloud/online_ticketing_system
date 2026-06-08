@@ -4,75 +4,135 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Queue</title>
-  <link rel="stylesheet" href="assets/css/base.css" />
-  <link rel="stylesheet" href="assets/css/responsive.css" />
+  assets/css/base.css
+  assets/css/responsive.css
 </head>
+
 <body>
   <div class="page-shell">
+
     <header class="site-header">
       <div class="inner">
         <a class="brand" href="index.html">
           <span class="brand-badge" aria-hidden="true"></span>
-          <span>Online Ticketing System</span>
+          <span>MyTickets</span>
         </a>
+
         <nav class="nav-links">
           <a class="nav-link" href="index.html">Home</a>
           <a class="nav-link" href="locations.html">Locations</a>
           <a class="nav-link" href="events.html">Events</a>
-          <span class="badge hidden" data-auth="true">Signed in as <span data-auth-profile class="muted">User</span></span>
-          <a class="nav-link" href="login.html" data-guest="true" data-action="login">Login</a>
-          <a class="nav-link hidden" href="#" data-auth="true" data-action="logout">Logout</a>
+
+          <span class="badge hidden" data-auth="true">
+            Welcome, <span data-auth-profile class="muted">User</span>
+          </span>
+
+          <a class="nav-link" href="login.html" data-guest="true">Login</a>
+          #Logout</a>
         </nav>
       </div>
     </header>
 
     <main class="main">
-<div class="container">
-  <div class="stepper">
-    <div class="step active">Queue</div>
-    <div class="step">Seats</div>
-    <div class="step">Reservation</div>
-    <div class="step">Payment</div>
-    <div class="step">Confirmation</div>
-    <div class="step">Success</div>
-  </div>
+      <div class="container">
 
-  <div class="checkout-layout">
-    <section class="panel section">
-      <span class="badge brand">Protected Flow</span>
-      <h1 class="hero-title mt-2">Queue waiting room</h1>
-      <p class="hero-subtitle">This page enters queue, polls status, and moves to seat selection only when the backend releases the session.</p>
+        <!-- STEPPER -->
+        <div class="stepper">
+          <div class="step active">Queue</div>
+          <div class="step">Seats</div>
+          <div class="step">Review</div>
+          <div class="step">Payment</div>
+          <div class="step">Confirmation</div>
+          <div class="step">Success</div>
+        </div>
 
-      <div id="queueStatusBox" class="message-box info mt-3">
-        <h3 class="mt-0">Starting queue session</h3>
-        <p class="mb-0">Calling POST /v1/queue/enter...</p>
+        <div class="checkout-layout">
+
+          <!-- LEFT SIDE -->
+          <section class="panel section">
+
+            <span class="badge brand">Please wait</span>
+
+            <h1 class="hero-title mt-2">
+              You’re in the queue
+            </h1>
+
+            <p class="hero-subtitle">
+              We’re currently experiencing high demand for this event.  
+              You’ll be automatically redirected as soon as it’s your turn.
+            </p>
+
+            <div id="queueStatusBox" class="message-box info mt-3">
+              <h3 class="mt-0">Getting things ready</h3>
+              <p class="mb-0">
+                Connecting you to the booking system. This usually takes just a few moments.
+              </p>
+            </div>
+
+            <div class="message-box info mt-3">
+              <p class="mb-0">
+                ⏳ Please don’t refresh or close this page.  
+                You will be redirected automatically.
+              </p>
+            </div>
+
+            <div class="button-row mt-3">
+              <button id="leaveQueueBtn" class="danger-btn">
+                Leave queue
+              </button>
+              <a class="secondary-btn" href="index.html">
+                Back to home
+              </a>
+            </div>
+
+          </section>
+
+          <!-- RIGHT SIDE -->
+          <aside class="panel section">
+            <h3 class="mt-0">What’s happening?</h3>
+
+            <ul class="summary-list">
+
+              <li class="summary-item">
+                <span class="muted">Step 1</span>
+                <strong>You’ve joined the queue</strong>
+              </li>
+
+              <li class="summary-item">
+                <span class="muted">Step 2</span>
+                <strong>We’re managing access fairly</strong>
+              </li>
+
+              <li class="summary-item">
+                <span class="muted">Step 3</span>
+                <strong>You’ll enter seat selection shortly</strong>
+              </li>
+
+            </ul>
+
+            <div class="message-box info mt-2">
+              <h3 class="mt-0">Thank you for your patience</h3>
+              <p class="helper-text mb-0">
+                High-demand events may take a few moments.  
+                We’re making sure everyone gets a fair chance to book.
+              </p>
+            </div>
+          </aside>
+
+        </div>
+
       </div>
-
-      <div class="metrics-grid mt-3">
-        <div class="metric"><div class="muted">Event ID</div><div id="queueEventId">—</div></div>
-        <div class="metric"><div class="muted">Category ID</div><div id="queueCategoryId">—</div></div>
-        <div class="metric"><div class="muted">Session ID</div><div id="queueSessionId">Pending</div></div>
-      </div>
-
-      <div class="button-row mt-3">
-        <button id="leaveQueueBtn" class="danger-btn">Leave queue</button>
-        <a class="secondary-btn" href="index.html">Back to home</a>
-      </div>
-    </section>
-
-    <aside id="queueSummary"></aside>
-  </div>
-</div>
-</main>
+    </main>
 
     <footer class="site-footer">
       <div class="inner">
-        <div class="muted">Static frontend demo for backend showcase</div>
-        <div class="muted">Hosted with S3 + CloudFront</div>
+        <div class="muted">© MyTickets</div>
+        <div class="muted">Fair and reliable event booking</div>
       </div>
     </footer>
-  </div>
 
+  </div>
   <script type="module" src="assets/js/pages/queue.js"></script>
+  
 </body>
 </html>

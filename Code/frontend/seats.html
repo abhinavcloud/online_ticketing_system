@@ -3,79 +3,130 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Seat Selection</title>
+  <title>Select Seats</title>
+
   <link rel="stylesheet" href="assets/css/base.css" />
   <link rel="stylesheet" href="assets/css/responsive.css" />
 </head>
+
 <body>
   <div class="page-shell">
+
+    <!-- HEADER -->
     <header class="site-header">
       <div class="inner">
         <a class="brand" href="index.html">
           <span class="brand-badge" aria-hidden="true"></span>
-          <span>Online Ticketing System</span>
+          <span>MyTickets</span>
         </a>
+
         <nav class="nav-links">
           <a class="nav-link" href="index.html">Home</a>
           <a class="nav-link" href="locations.html">Locations</a>
           <a class="nav-link" href="events.html">Events</a>
-          <span class="badge hidden" data-auth="true">Signed in as <span data-auth-profile class="muted">User</span></span>
-          <a class="nav-link" href="login.html" data-guest="true" data-action="login">Login</a>
+
+          <span class="badge hidden" data-auth="true">
+            Welcome, <span data-auth-profile class="muted">User</span>
+          </span>
+
+          <a class="nav-link" href="login.html" data-guest="true">Login</a>
           <a class="nav-link hidden" href="#" data-auth="true" data-action="logout">Logout</a>
         </nav>
       </div>
     </header>
 
+    <!-- MAIN -->
     <main class="main">
-<div class="container">
-  <div class="stepper">
-    <div class="step">Queue</div>
-    <div class="step active">Seats</div>
-    <div class="step">Reservation</div>
-    <div class="step">Payment</div>
-    <div class="step">Confirmation</div>
-    <div class="step">Success</div>
-  </div>
+      <div class="container">
 
-  <div class="checkout-layout">
-    <section class="panel section">
-      <span class="badge brand">Protected Flow</span>
-      <h1 class="hero-title mt-2">Seat selection</h1>
-      <p class="hero-subtitle">The UI enforces a maximum of 5 selected seats. Reservation remains all-or-nothing on the backend.</p>
+        <!-- STEPPER -->
+        <div class="stepper">
+          <div class="step">Queue</div>
+          <div class="step active">Seats</div>
+          <div class="step">Review</div>
+          <div class="step">Payment</div>
+          <div class="step">Confirmation</div>
+          <div class="step">Success</div>
+        </div>
 
-      <div class="legend mt-2">
-        <span class="badge">Available</span>
-        <span class="badge warning">Locked</span>
-        <span class="badge danger">Booked</span>
-        <span class="badge success">Selected</span>
+        <div class="checkout-layout">
+
+          <!-- LEFT SIDE -->
+          <section class="panel section">
+
+            <span class="badge brand">Choose your seats</span>
+
+            <h1 class="hero-title mt-2">
+              Select your seats
+            </h1>
+
+            <p class="hero-subtitle">
+              Click on available seats to select them.  
+              You can choose up to 5 seats.
+            </p>
+
+            <!-- LEGEND -->
+            <div class="legend mt-2">
+              <span class="badge">Available</span>
+              <span class="badge warning">Currently unavailable</span>
+              <span class="badge danger">Already booked</span>
+              <span class="badge success">Your selection</span>
+            </div>
+
+            <!-- STATUS -->
+            <div id="seatsStatusBox" class="message-box info mt-3 hidden"></div>
+
+            <!-- GRID -->
+            <div class="seat-layout mt-3">
+              <div class="stage">Stage / Screen</div>
+              <div id="seatGrid" class="seat-grid"></div>
+            </div>
+
+            <!-- ACTIONS -->
+            <div class="button-row mt-3">
+              <button id="reserveBtn" class="primary-btn">
+                Continue with selected seats
+              </button>
+
+              <a class="secondary-btn" href="index.html">
+                Cancel and go home
+              </a>
+            </div>
+
+            <p class="helper-text mt-2">
+              💡 Tip: Seats may become unavailable quickly during high demand events.
+            </p>
+
+          </section>
+
+          <!-- RIGHT SIDE -->
+          <aside id="seatSummary" class="panel section">
+            <h3 class="mt-0">Your selection</h3>
+
+            <div class="message-box info mt-2">
+              <p class="mb-0">
+                👆 Select seats to see your booking summary here.
+              </p>
+            </div>
+
+          </aside>
+
+        </div>
+
       </div>
+    </main>
 
-      <div id="seatsStatusBox" class="message-box info mt-3 hidden"></div>
-
-      <div class="seat-layout mt-3">
-        <div class="stage">Stage / Screen</div>
-        <div id="seatGrid" class="seat-grid"></div>
-      </div>
-
-      <div class="button-row mt-3">
-        <button id="reserveBtn" class="primary-btn">Reserve selected seats</button>
-        <a class="secondary-btn" href="index.html">Cancel and go home</a>
-      </div>
-    </section>
-
-    <aside id="seatSummary"></aside>
-  </div>
-</div>
-</main>
-
+    <!-- FOOTER -->
     <footer class="site-footer">
       <div class="inner">
-        <div class="muted">Static frontend demo for backend showcase</div>
-        <div class="muted">Hosted with S3 + CloudFront</div>
+        <div class="muted">© MyTickets</div>
+        <div class="muted">Book your favorite events with ease</div>
       </div>
     </footer>
+
   </div>
 
+  <!-- SCRIPT -->
   <script type="module" src="assets/js/pages/seats.js"></script>
 </body>
 </html>

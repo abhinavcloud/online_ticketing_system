@@ -13,38 +13,51 @@
       <div class="inner">
         <a class="brand" href="index.html">
           <span class="brand-badge" aria-hidden="true"></span>
-          <span>Online Ticketing System</span>
+          <span>MyTickets</span>
         </a>
         <nav class="nav-links">
           <a class="nav-link" href="index.html">Home</a>
           <a class="nav-link" href="locations.html">Locations</a>
           <a class="nav-link" href="events.html">Events</a>
-          <span class="badge hidden" data-auth="true">Signed in as <span data-auth-profile class="muted">User</span></span>
-          <a class="nav-link" href="login.html" data-guest="true" data-action="login">Login</a>
+
+          <span class="badge hidden" data-auth="true">
+            Welcome, <span data-auth-profile class="muted">User</span>
+          </span>
+
+          <a class="nav-link" href="login.html" data-guest="true">Login</a>
           <a class="nav-link hidden" href="#" data-auth="true" data-action="logout">Logout</a>
         </nav>
       </div>
     </header>
 
     <main class="main">
-<div class="container">
-  <section class="section panel">
-    <div class="section-header">
-      <div>
-        <span class="badge brand">Public Browse</span>
-        <h1 class="section-title mt-2">Locations</h1>
-        <p class="section-subtitle mb-0">Choose a location to open the event discovery journey.</p>
+      <div class="container">
+
+        <section class="section panel">
+          <div class="section-header">
+            <div>
+              <span class="badge brand">Find events near you</span>
+
+              <h1 class="section-title mt-2">
+                Choose Your City
+              </h1>
+
+              <p class="section-subtitle mb-0">
+                Select a location to explore concerts, shows, and live events happening nearby.
+              </p>
+            </div>
+          </div>
+
+          <div id="locationsGrid" class="locations-grid"></div>
+        </section>
+
       </div>
-    </div>
-    <div id="locationsGrid" class="locations-grid"></div>
-  </section>
-</div>
-</main>
+    </main>
 
     <footer class="site-footer">
       <div class="inner">
-        <div class="muted">Static frontend demo for backend showcase</div>
-        <div class="muted">Hosted with S3 + CloudFront</div>
+        <div class="muted">© MyTickets</div>
+        <div class="muted">Find and book your favorite events easily</div>
       </div>
     </footer>
   </div>

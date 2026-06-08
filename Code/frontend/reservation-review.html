@@ -1,69 +1,114 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>< lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Reservation Review</title>
-  <link rel="stylesheet" href="assets/css/base.css" />
-  <link rel="stylesheet" href="assets/css/responsive.css" />
+  <title>Review Booking</title>
+  assets/css/base.css
+  assets/css/responsive.css
 </head>
+
 <body>
   <div class="page-shell">
+
     <header class="site-header">
       <div class="inner">
         <a class="brand" href="index.html">
           <span class="brand-badge" aria-hidden="true"></span>
-          <span>Online Ticketing System</span>
+          <span>MyTickets</span>
         </a>
+
         <nav class="nav-links">
           <a class="nav-link" href="index.html">Home</a>
           <a class="nav-link" href="locations.html">Locations</a>
           <a class="nav-link" href="events.html">Events</a>
-          <span class="badge hidden" data-auth="true">Signed in as <span data-auth-profile class="muted">User</span></span>
-          <a class="nav-link" href="login.html" data-guest="true" data-action="login">Login</a>
-          <a class="nav-link hidden" href="#" data-auth="true" data-action="logout">Logout</a>
+
+          <span class="badge hidden" data-auth="true">
+            Welcome, <span data-auth-profile class="muted">User</span>
+          </span>
+
+          <a class="nav-link" href="login.html" data-guest="true">Login</a>
+          #Logout</a>
         </nav>
       </div>
     </header>
 
     <main class="main">
-<div class="container">
-  <div class="stepper">
-    <div class="step">Queue</div>
-    <div class="step">Seats</div>
-    <div class="step active">Reservation</div>
-    <div class="step">Payment</div>
-    <div class="step">Confirmation</div>
-    <div class="step">Success</div>
-  </div>
+      <div class="container">
 
-  <div class="checkout-layout">
-    <section class="panel section">
-      <span class="badge success">Reservation Created</span>
-      <h1 class="hero-title mt-2">Review reserved seats</h1>
-      <p class="hero-subtitle">Reservation is successful only at reservation level. Seats remain temporary until payment and confirmation complete.</p>
+        <!-- STEPPER -->
+        <div class="stepper">
+          <div class="step">Queue</div>
+          <div class="step">Seats</div>
+          <div class="step active">Review</div>
+          <div class="step">Payment</div>
+          <div class="step">Confirmation</div>
+          <div class="step">Success</div>
+        </div>
 
-      <div id="reservationInfo"></div>
+        <div class="checkout-layout">
 
-      <div class="button-row mt-3">
-        <a class="primary-btn" href="payment.html">Proceed to Payment</a>
-        <a class="secondary-btn" href="index.html">Cancel and go home</a>
+          <!-- LEFT SIDE -->
+          <section class="panel section">
+
+            <span class="badge success">Seats reserved</span>
+
+            <h1 class="hero-title mt-2">
+              Review your booking
+            </h1>
+
+            <p class="hero-subtitle">
+              Please review your selected seats before proceeding to payment.
+            </p>
+
+            <div class="message-box warning mt-3">
+              <p class="mb-0">
+                ⏳ Your seats are reserved for a limited time.  
+                Complete your payment to confirm your booking.
+              </p>
+            </div>
+
+            <div id="reservationInfo" class="mt-3"></div>
+
+            <div class="button-row mt-3">
+              <a class="primary-btn" href="payment.html">
+                Continue to payment
+              </a>
+
+              <a class="secondary-btn" href="index.html">
+                Cancel booking
+              </a>
+            </div>
+
+          </section>
+
+          <!-- RIGHT SIDE -->
+          <aside id="reservationSummary" class="panel section">
+
+            <h3 class="mt-0">Booking summary</h3>
+
+            <div class="message-box info mt-2">
+              <p class="mb-0">
+                ✅ Seats are temporarily held for you  
+                💳 Pay now to secure your tickets
+              </p>
+            </div>
+
+          </aside>
+
+        </div>
+
       </div>
-    </section>
-
-    <aside id="reservationSummary"></aside>
-  </div>
-</div>
-</main>
+    </main>
 
     <footer class="site-footer">
       <div class="inner">
-        <div class="muted">Static frontend demo for backend showcase</div>
-        <div class="muted">Hosted with S3 + CloudFront</div>
+        <div class="muted">© MyTickets</div>
+        <div class="muted">Secure and easy ticket booking</div>
       </div>
     </footer>
-  </div>
 
+  </div>
   <script type="module" src="assets/js/pages/reservation-review.js"></script>
 </body>
 </html>
+

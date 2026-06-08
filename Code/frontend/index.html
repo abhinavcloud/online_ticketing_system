@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Online Ticketing System</title>
+  <title>mytickets.click</title>
   <link rel="stylesheet" href="assets/css/base.css" />
   <link rel="stylesheet" href="assets/css/responsive.css" />
 </head>
@@ -13,84 +13,108 @@
       <div class="inner">
         <a class="brand" href="index.html">
           <span class="brand-badge" aria-hidden="true"></span>
-          <span>Online Ticketing System</span>
+          <span>MyTickets</span>
         </a>
         <nav class="nav-links">
           <a class="nav-link" href="index.html">Home</a>
           <a class="nav-link" href="locations.html">Locations</a>
           <a class="nav-link" href="events.html">Events</a>
-          <span class="badge hidden" data-auth="true">Signed in as <span data-auth-profile class="muted">User</span></span>
-          <a class="nav-link" href="login.html" data-guest="true" data-action="login">Login</a>
+          <span class="badge hidden" data-auth="true">
+            Welcome, <span data-auth-profile class="muted">User</span>
+          </span>
+          <a class="nav-link" href="login.html" data-guest="true">Login</a>
           <a class="nav-link hidden" href="#" data-auth="true" data-action="logout">Logout</a>
         </nav>
       </div>
     </header>
 
     <main class="main">
-<div class="container">
-  <section class="hero">
-    <div class="panel hero-copy">
-      <span class="badge brand mb-2">Public Browse + Protected Booking Flow</span>
-      <h1 class="hero-title">A clean frontend that makes the backend capabilities visible.</h1>
-      <p class="hero-subtitle">
-        Browse locations and events without login. Authenticate with Cognito Hosted UI + Google when you want to enter queue, choose seats, reserve tickets, pay, and confirm booking.
-      </p>
-      <div class="cta-row mt-3">
-        <a class="primary-btn" href="locations.html">Browse Locations</a>
-        <a class="secondary-btn" href="events.html">Browse Events</a>
-      </div>
-    </div>
-    <div class="panel hero-side">
-      <h3 class="mt-0">Backend capabilities surfaced in UI</h3>
-      <div class="metrics-grid mt-2">
-        <div class="metric">
-          <div class="muted">Browse</div>
-          <div class="metric-value">Public</div>
-        </div>
-        <div class="metric">
-          <div class="muted">Queue</div>
-          <div class="metric-value">Protected</div>
-        </div>
-        <div class="metric">
-          <div class="muted">Seat Hold</div>
-          <div class="metric-value">Cache</div>
-        </div>
-      </div>
-      <div class="message-box info mt-2">
-        <h3 class="mt-0">Phase 1 frontend scope</h3>
-        <p class="helper-text mb-0">No My Tickets page. On payment or confirmation failure the flow exits back to home and lets seat lock TTL expire naturally.</p>
-      </div>
-    </div>
-  </section>
+      <div class="container">
 
-  <section class="section panel">
-    <div class="section-header">
-      <div>
-        <h2 class="section-title">Locations</h2>
-        <p class="section-subtitle mb-0">Top-level discovery driven by the browse service.</p>
-      </div>
-      <a class="secondary-btn" href="locations.html">View all</a>
-    </div>
-    <div id="homeLocations" class="locations-grid"></div>
-  </section>
+        <!-- HERO -->
+        <section class="hero">
+          <div class="panel hero-copy">
+            <span class="badge brand mb-2">Your next experience starts here</span>
 
-  <section class="section panel">
-    <div class="section-header">
-      <div>
-        <h2 class="section-title">Upcoming events</h2>
-        <p class="section-subtitle mb-0">Loaded from browse APIs. If your event listing requires location, the page automatically uses the first available location.</p>
+            <h1 class="hero-title">
+              Discover events. Choose your seats. Book instantly.
+            </h1>
+
+            <p class="hero-subtitle">
+              Explore concerts, shows, and live events near you.  
+              Select your seats and complete your booking in a few simple steps.
+            </p>
+
+            <div class="cta-row mt-3">
+              <a class="primary-btn" href="locations.html">Browse Locations</a>
+              <a class="secondary-btn" href="events.html">View Events</a>
+            </div>
+          </div>
+
+          <!-- RIGHT SIDE -->
+          <div class="panel hero-side">
+            <h3 class="mt-0">Why choose MyTickets?</h3>
+
+            <div class="metrics-grid mt-2">
+              <div class="metric">
+                <div class="muted">Easy</div>
+                <div class="metric-value">Browse</div>
+              </div>
+              <div class="metric">
+                <div class="muted">Secure</div>
+                <div class="metric-value">Booking</div>
+              </div>
+              <div class="metric">
+                <div class="muted">Instant</div>
+                <div class="metric-value">Confirmation</div>
+              </div>
+            </div>
+
+            <div class="message-box info mt-2">
+              <h3 class="mt-0">Simple booking process</h3>
+              <p class="helper-text mb-0">
+                Pick an event, select your seats, make payment, and you're all set.  
+                Your tickets are confirmed instantly.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- LOCATIONS -->
+        <section class="section panel">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title">Explore Locations</h2>
+              <p class="section-subtitle mb-0">
+                Find events happening in cities near you.
+              </p>
+            </div>
+            <a class="secondary-btn" href="locations.html">View all</a>
+          </div>
+          <div id="homeLocations" class="locations-grid"></div>
+        </section>
+
+        <!-- EVENTS -->
+        <section class="section panel">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title">Upcoming Events</h2>
+              <p class="section-subtitle mb-0">
+                Don’t miss out on the latest concerts and live experiences.
+              </p>
+            </div>
+            <a class="secondary-btn" href="events.html">View all</a>
+          </div>
+          <div id="homeEvents" class="event-grid"></div>
+        </section>
+
       </div>
-      <a class="secondary-btn" href="events.html">View all</a>
-    </div>
-    <div id="homeEvents" class="event-grid"></div>
-  </section>
-</div>
-</main>
+    </main>
 
     <footer class="site-footer">
       <div class="inner">
-        <div class="muted">Static frontend demo for backend showcase</div>
-        <div class="muted">Hosted with S3 + CloudFront</div>
+        <div class="muted">© MyTickets</div>
+        <div class="muted">Book events anytime, anywhere</div>
       </div>
     </footer>
   </div>
