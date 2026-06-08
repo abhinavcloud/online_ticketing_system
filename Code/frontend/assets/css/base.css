@@ -89,21 +89,26 @@ img {
   padding: 1rem 0;
 }
 
+
 .brand {
   display: inline-flex;
   align-items: center;
   gap: 0.8rem;
   font-weight: 800;
   letter-spacing: 0.02em;
+  flex: 0 0 auto;
 }
+
+
 
 .brand-logo {
   display: block;
-  height: 42px;
+  height: 58px;
   width: auto;
-  max-width: 220px;
+  max-width: 280px;
   object-fit: contain;
 }
+
 
 .brand-badge {
   width: 42px;
@@ -376,6 +381,23 @@ textarea {
   border: 1px solid rgba(255,255,255,0.1);
   background: rgba(255,255,255,0.04);
   color: var(--text);
+}
+
+.select {
+  appearance: auto;
+  background: rgba(255,255,255,0.06);
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.select option {
+  background: #111a2b;
+  color: #eaf1ff;
+}
+
+.select option:checked {
+  background: #162136;
+  color: #ffffff;
 }
 
 .input::placeholder {

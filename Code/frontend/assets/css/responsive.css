@@ -43,9 +43,9 @@
 
   .brand-logo {
     display: block;
-    height: 42px;
+    height: 48px;
     width: auto;
-    max-width: 220px;
+    max-width: 240px;
     object-fit: contain;
   }
 
@@ -287,5 +287,10 @@
 
   .seat-layout {
     padding: 0.65rem;
+  }
+
+  .brand-logo {
+  height: 42px;
+  max-width: 220px;
   }
 }
