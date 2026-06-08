@@ -59,7 +59,20 @@
     width: 100%;
   }
 
+  /* Seat map remains 10 seats per row and becomes horizontally scrollable */
+  .seat-layout {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .seat-grid {
-    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    grid-template-columns: repeat(10, 64px);
+    min-width: calc((64px * 10) + (0.65rem * 9));
+    width: max-content;
+  }
+
+  .seat {
+    min-width: 64px;
   }
 }
+``

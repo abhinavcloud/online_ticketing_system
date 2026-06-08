@@ -1,3 +1,4 @@
+
 import { api } from '../api.js';
 import { requireAuth } from '../auth.js';
 import { storage } from '../storage.js';
@@ -8,12 +9,24 @@ if (!requireAuth()) {
   throw new Error('Auth required');
 }
 
+
 const statusBox = document.querySelector('#seatsStatusBox');
 const grid = document.querySelector('#seatGrid');
 const reserveBtn = document.querySelector('#reserveBtn');
 
 let selected = [];
 let seatIndex = [];
+
+// Natural human-friendly string sorting:
+// VIP-1, VIP-2, VIP-10 instead of VIP-1, VIP-10, VIP-100
+const seatLabelCollator = new Intl.Collator(undefined, {
+  numeric: true,
+  sensitivity: 'base',
+});
+
+function compareSeatLabels(a, b) {
+  return seatLabelCollator.compare(String(a || ''), String(b || ''));
+}
 
 function getBookingContext() {
   const booking = storage.getBooking() || {};
@@ -33,55 +46,6 @@ function setStatus(title, text, kind = 'info') {
   statusBox.classList.remove('hidden');
 }
 
-/**
- * Parse seat labels like:
- * VIP-1, VIP-20, GEN-3
- * so they can be sorted naturally instead of lexicographically.
- */
-function parseSeatLabel(label) {
-  const value = String(label || '').trim();
-
-  const match = value.match(/^(.+?)-(\d+)$/);
-  if (match) {
-    return {
-      prefix: match[1].trim(),
-      number: parseInt(match[2], 10),
-      raw: value,
-    };
-  }
-
-  return {
-    prefix: value,
-    number: Number.MAX_SAFE_INTEGER,
-    raw: value,
-  };
-}
-
-/**
- * Human-friendly seat sorting:
- * VIP-1 < VIP-2 < VIP-10
- */
-function compareSeatLabels(a, b) {
-  const pa = parseSeatLabel(a);
-  const pb = parseSeatLabel(b);
-
-  const prefixCompare = pa.prefix.localeCompare(pb.prefix, undefined, {
-    sensitivity: 'base',
-    numeric: true,
-  });
-
-  if (prefixCompare !== 0) return prefixCompare;
-  if (pa.number !== pb.number) return pa.number - pb.number;
-
-  return pa.raw.localeCompare(pb.raw, undefined, {
-    sensitivity: 'base',
-    numeric: true,
-  });
-}
-
-/**
- * Normalize backend seat payload into a consistent frontend model.
- */
 function normalizeSeats(payload) {
   const seats = Array.isArray(payload?.seats)
     ? payload.seats
@@ -99,10 +63,6 @@ function normalizeSeats(payload) {
   return normalized;
 }
 
-/**
- * Determine whether the current page is rendering GENERAL seats.
- * We use booking.categoryName if available, and fall back to seat label prefix.
- */
 function isGeneralSeatView() {
   const { booking } = getBookingContext();
   const categoryName = String(booking?.categoryName || '').trim().toUpperCase();
@@ -111,14 +71,10 @@ function isGeneralSeatView() {
     return true;
   }
 
-  // Fallback: infer from first seat label
   const firstSeat = seatIndex[0]?.label || '';
-  return /^GEN-/i.test(firstSeat);
+  return /^GEN[-\s]/i.test(firstSeat) || /^GENERAL[-\s]/i.test(firstSeat);
 }
 
-/**
- * Update the sidebar summary.
- */
 function selectedSummary() {
   const { booking } = getBookingContext();
   const unitPrice = booking.unitPrice || 0;
@@ -146,18 +102,14 @@ function selectedSummary() {
   }
 }
 
-/**
- * Build the HTML for a full-width divider block that visually separates
- * the GENERAL seats from the front VIP section.
- */
 function vipDividerMarkup() {
   return `
     <div
       class="seat-area-divider"
       style="
         grid-column: 1 / -1;
-        margin: 8px 0 18px 0;
-        padding: 14px 12px;
+        margin: 10px 0 24px 0;
+        padding: 16px 12px;
         border-radius: 12px;
         background: rgba(255,255,255,0.06);
         border: 1px solid rgba(255,255,255,0.12);
@@ -172,14 +124,10 @@ function vipDividerMarkup() {
   `;
 }
 
-/**
- * Render seat grid with exactly 20 seats per row.
- * For GENERAL seats, insert a VIP block between stage and the seat rows.
- */
 function renderGrid() {
-  // Force exactly 20 seats per row
+  // ✅ Limit to 10 seats per row
   grid.style.display = 'grid';
-  grid.style.gridTemplateColumns = 'repeat(20, minmax(0, 1fr))';
+  grid.style.gridTemplateColumns = 'repeat(10, minmax(0, 1fr))';
 
   const generalView = isGeneralSeatView();
 
@@ -229,9 +177,6 @@ function renderGrid() {
   });
 }
 
-/**
- * Load seat map from backend.
- */
 async function loadSeats() {
   const { booking, eventId, categoryId, bookingToken } = getBookingContext();
 
@@ -294,9 +239,6 @@ async function loadSeats() {
   }
 }
 
-/**
- * Reserve selected seats.
- */
 reserveBtn.addEventListener('click', async () => {
   const { booking, eventId, categoryId, bookingToken } = getBookingContext();
 
@@ -378,3 +320,8 @@ reserveBtn.addEventListener('click', async () => {
 });
 
 loadSeats();
+import { requireAuth } from '../auth.js';
+import { storage } from '../storage.js';
+import { APP_CONFIG } from '../config.js';
+import { qs, renderBookingSummary, money } from './common.js';
+
