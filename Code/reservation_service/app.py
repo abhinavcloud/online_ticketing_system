@@ -650,7 +650,7 @@ def handle_reserve(event, context):
     idem_key = _reserve_idempotency_key(event_id, category_id, user_sub, idem_key_header)
 
     # KEYS includes: seatlock keys + seats key + meta key + idempotency key
-    all_keys = lock_keys + [reservation_seats_key, reservation_meta_key, idem_key]
+    all_keys = lock_keys + [count_key, reservation_seats_key, reservation_meta_key, idem_key]
 
     # Values
     lock_value = reservation_id
