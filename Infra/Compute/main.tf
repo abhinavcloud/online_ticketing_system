@@ -484,7 +484,7 @@ resource "aws_lambda_function" "seat_availability_service" {
       # -----------------------------
       # Behavior knobs
       # -----------------------------
-      SEATS_PAGE_SIZE          = "200"
+      SEATS_PAGE_SIZE          = "1000"
       SHOW_LOCK_EXPIRES_AT     = "false"
       JWT_KMS_KEY_ID = aws_kms_key.queue_jwt_signing_key.key_id
       JWT_ALG        = "RS256"

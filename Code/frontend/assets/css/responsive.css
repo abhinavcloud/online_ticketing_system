@@ -39,8 +39,7 @@
   .state-grid,
   .grid-2,
   .grid-3,
-  .metrics-grid,
-  .stepper {
+  .metrics-grid {
     grid-template-columns: 1fr;
   }
 
@@ -59,15 +58,72 @@
     width: 100%;
   }
 
-  /* Seat map remains 10 seats per row and becomes horizontally scrollable */
+  /* =========================================
+     Stepper: keep it horizontally connected
+     instead of stacking vertically
+     ========================================= */
+  .stepper {
+    display: flex;
+    gap: 0.6rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    padding-bottom: 0.25rem;
+  }
+
+  .stepper::-webkit-scrollbar {
+    display: none;
+  }
+
+  .step {
+    flex: 0 0 140px;
+    white-space: nowrap;
+    scroll-snap-align: start;
+  }
+
+  /* =========================================
+     Legend: keep badges in one row with
+     horizontal scroll so it feels connected
+     ========================================= */
+  .legend {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.25rem;
+  }
+
+  .legend::-webkit-scrollbar {
+    display: none;
+  }
+
+  .legend .badge {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  /* =========================================
+     Seat map: keep 10 seats per row and make
+     Stage + VIP divider + grid behave like one
+     continuous horizontally-scrollable layout
+     ========================================= */
   .seat-layout {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
 
+  .stage,
+  .seat-area-divider,
+  .seat-grid {
+    min-width: calc((64px * 10) + (0.65rem * 9));
+  }
+
+  .stage,
+  .seat-area-divider {
+    width: max-content;
+  }
+
   .seat-grid {
     grid-template-columns: repeat(10, 64px);
-    min-width: calc((64px * 10) + (0.65rem * 9));
     width: max-content;
   }
 

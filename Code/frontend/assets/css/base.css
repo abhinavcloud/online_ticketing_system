@@ -404,7 +404,7 @@ textarea {
 }
 
 .metric-value {
-  font-size: 1.6rem;
+  font-size: 1rem;
   font-weight: 800;
 }
 
@@ -507,8 +507,9 @@ textarea {
   justify-content: center;
   text-align: center;
   font-size: 0.88rem;
+  font-weight: 700;
   line-height: 1.2;
-  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .seat.available {
@@ -521,10 +522,18 @@ textarea {
   transform: translateY(-1px);
 }
 
-.seat.selected {
-  background: rgba(40, 199, 111, 0.20);
-  border-color: rgba(40, 199, 111, 0.40);
-  color: #ffffff;
+/* Strong selected state. Keep this visually obvious. */
+.seat.selected,
+button.seat.selected {
+  background: var(--success) !important;
+  border-color: rgba(40, 199, 111, 0.75) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 2px rgba(40, 199, 111, 0.22);
+}
+
+.seat.selected:hover,
+button.seat.selected:hover {
+  transform: translateY(-1px);
 }
 
 .seat.booked {
