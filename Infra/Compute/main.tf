@@ -1,22 +1,40 @@
-# Create a lambda policy for accessing Aurora Cluster
-resource "aws_iam_policy" "lambda_aurora_cluster_policy" {
-  name        = "lambda-aurora"
-  description = "Allow Lambda to access Aurora Cluster"
+# Create a lambda policy for accessing RDS Proxy
+resource "aws_iam_policy" "lambda_rds_proxy_policy" {
+  name        = "lambda-rds-proxy"
+  description = "Allow Lambda to access RDS Proxy"
 
   policy = jsonencode({
     Version = "2012-10-17"
     "Statement": [
     {
-      "Sid": "AllowAuroraConnection",
+      "Sid": "AllowRDSProxyConnection",
       "Effect": "Allow",
       "Action": [
         "rds-db:connect"
       ],
       "Resource": [
-        "arn:aws:rds-db:${var.region}:${var.account_id}:dbuser:${var.db_cluster_id}/${var.db_user}"
+        "arn:aws:rds-db:${var.region}:${var.account_id}:dbuser:${var.db_proxy_id}/${var.db_user}"
       ]
 
-    }
+    },
+    {
+      "Sid": "AllowDescribeRDSProxy",
+      "Effect": "Allow",
+      "Action": [
+        "rds:DescribeDBProxies",
+        "rds:DescribeDBProxyTargets",
+        "rds:DescribeDBProxyTargetGroups"
+      ],
+      "Resource": "*"
+    },
+    
+    {
+        Sid    = "AllowGetDbToken",
+        Effect = "Allow",
+        Action = ["rds:GenerateDbAuthToken"],
+        Resource = ["*"]
+      }
+
   ]
   })
 }
@@ -72,16 +90,10 @@ resource "aws_iam_role" "lambda_role_ticket_system" {
   })
 }
 
-# Create a lambda role policy attachement with accesing Secret manager
-resource "aws_iam_role_policy_attachment" "attach_lambda_allow_secret_manager_access" {
-  role       = aws_iam_role.lambda_role_ticket_system.name
-  policy_arn = var.secret_manager_access_policy
-}
-
 # Create a lambda role policy attachement with accesing RDS proxy policy
-resource "aws_iam_role_policy_attachment" "lambda_attach_aurora_cluster" {
+resource "aws_iam_role_policy_attachment" "lambda_attach_rds_proxy" {
   role       = aws_iam_role.lambda_role_ticket_system.name
-  policy_arn = aws_iam_policy.lambda_aurora_cluster_policy.arn
+  policy_arn = aws_iam_policy.lambda_rds_proxy_policy.arn
 
 }
 
@@ -133,10 +145,10 @@ resource "aws_iam_role_policy_attachment" "lambda_notification_access" {
   
 
 
-# Creating an Egress rule from Lambda security group to Aurora Cluster
-resource "aws_vpc_security_group_egress_rule" "lambda_sg_egress_aurora_rule" {
+# Creating an Egress rule from Lambda security group to RDS Proxy
+resource "aws_vpc_security_group_egress_rule" "lambda_sg_egress_rds_proxy_rule" {
   security_group_id = var.security_group_id
-  referenced_security_group_id  = var.db_cluster_security_group
+  referenced_security_group_id  = var.db_proxy_security_group
   from_port   = 5432
   ip_protocol = "tcp"
   to_port     = 5432
@@ -219,8 +231,8 @@ resource "aws_lambda_function" "browse_service" {
     variables = {
       APP_REGION = var.region
 
-      # DB (Aurora Cluster IAM)
-      DB_HOST = var.db_cluster_endpoint
+      # DB (RDS Proxy IAM)
+      DB_HOST = var.db_proxy_endpoint
       DB_PORT = tostring(var.db_port)
       DB_NAME = var.db_name
       DB_USER = var.db_user
@@ -266,7 +278,6 @@ resource "aws_kms_key" "queue_jwt_signing_key" {
         Principal: { AWS: aws_iam_role.lambda_role_ticket_system.arn },
         Action: [
           "kms:Sign",
-          "kms:Verify",
           "kms:GetPublicKey",
           "kms:DescribeKey"
         ],
@@ -293,7 +304,6 @@ resource "aws_iam_policy" "lambda_kms_sign_policy" {
       Effect: "Allow",
       Action: [
         "kms:Sign",
-        "kms:Verify",
         "kms:GetPublicKey",
         "kms:DescribeKey"
       ],
@@ -384,8 +394,8 @@ environment {
     QUEUE_PROMOTION_LOCK_SECONDS = "1"     # short mutex to avoid double promotions
     QUEUE_MAX_PROMOTE_PER_POLL   = "25"    # safety cap; computed releasableUsers still drives promotion size
 
-    # DB (Aurora Cluster IAM)
-    DB_HOST = var.db_cluster_endpoint
+    # DB (RDS Proxy IAM)
+    DB_HOST = var.db_proxy_endpoint
     DB_PORT = tostring(var.db_port)
     DB_NAME = var.db_name
     DB_USER = var.db_user
@@ -453,9 +463,9 @@ resource "aws_lambda_function" "seat_availability_service" {
       APP_REGION = var.region
 
       # -----------------------------
-      # DB (Aurora Cluster IAM)
+      # DB (RDS Proxy IAM)
       # -----------------------------
-      DB_HOST = var.db_cluster_endpoint
+      DB_HOST = var.db_proxy_endpoint
       DB_PORT = tostring(var.db_port)
       DB_NAME = var.db_name
       DB_USER = var.db_user
@@ -484,7 +494,7 @@ resource "aws_lambda_function" "seat_availability_service" {
       # -----------------------------
       # Behavior knobs
       # -----------------------------
-      SEATS_PAGE_SIZE          = "1000"
+      SEATS_PAGE_SIZE          = "200"
       SHOW_LOCK_EXPIRES_AT     = "false"
       JWT_KMS_KEY_ID = aws_kms_key.queue_jwt_signing_key.key_id
       JWT_ALG        = "RS256"
@@ -549,9 +559,9 @@ resource "aws_lambda_function" "reservation_service" {
       APP_REGION = var.region
 
       # -----------------------------
-      # DB (Aurora Cluster IAM)
+      # DB (RDS Proxy IAM)
       # -----------------------------
-      DB_HOST = var.db_cluster_endpoint
+      DB_HOST = var.db_proxy_endpoint
       DB_PORT = tostring(var.db_port)
       DB_NAME = var.db_name
       DB_USER = var.db_user
@@ -692,9 +702,9 @@ resource "aws_lambda_function" "confirmation_service" {
       APP_REGION = var.region
 
       # -----------------------------
-      # DB (Aurora IAM)
+      # DB (RDS Proxy IAM)
       # -----------------------------
-      DB_HOST = var.db_cluster_endpoint
+      DB_HOST = var.db_proxy_endpoint
       DB_PORT = tostring(var.db_port)
       DB_NAME = var.db_name
       DB_USER = var.db_user

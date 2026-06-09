@@ -1,3 +1,19 @@
+output "db_proxy_arn" {
+    value = aws_db_proxy.rds_proxy.arn
+}
+
+
+output "db_proxy_endpoint" {
+  value = aws_db_proxy.rds_proxy.endpoint
+}
+
+output "db_proxy_resource_id" {
+  value = aws_db_proxy.rds_proxy.id  
+}
+
+output "db_proxy_security_group" {
+    value = aws_security_group.rds_proxy_sg.id
+}
 
 output "db_cluster_endpoint" {
   value = aws_rds_cluster.online-ticketing-system.endpoint
@@ -19,12 +35,4 @@ output "db_port" {
 
 output "db_cluster_resource_id" {
   value = aws_rds_cluster.online-ticketing-system.cluster_resource_id
-}
-
-output "db_cluster_security_group" {
-  value = aws_security_group.aurora_sg.id
-}
-
-output "secret_manager_access_policy" {
-  value = aws_iam_policy.lambda_allow_secret_manager_connection.arn
 }

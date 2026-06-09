@@ -2,8 +2,7 @@
 
 
 ## Table of Contents
-- [0. Overview](#overview)
-- [1. IMPORTANT - WHY THIS LIGHT BRANCH EXISTS](#important---why-this-light-branch-exists)
+- [1. Overview](#overview)
 - [2. Problem Statement](#problem-statement)
 - [3. Objectives](#objectives)
 - [4. Functional Scope](#functional-scope)
@@ -21,14 +20,12 @@
 - [16. Security Model](#security-model)
 - [17. Infrastructure Layout](#infrastructure-layout)
 - [18. Database Bootstrap](#database-bootstrap)
-- [19. Frontend Design and Configuration](#frontend-design)
-- [20. Deployment Process](#deployment-process)
-- [21. Local Developement Notes](#local-development-notes)
-- [22. Known Design Choices and TradeOfss](#known-design-choices)
-- [23. Operational Notes](#operational-notes)
-- [24. Future Improvements](#future-improvements)
-- [25. Conclusion](#conclusion)
-
+- [19. Deployment Process](#deployment-process)
+- [20. Local Developement Notes](#local-development-notes)
+- [21. Known Design Choices and TradeOfss](#known-design-choices)
+- [22. Operational Notes](#operational-notes)
+- [23. Future Improvements](#future-improvements)
+- [24. Conclusion](#conclusion)
 
 ## Overview
 
@@ -36,85 +33,11 @@ This project is a cloud-native online ticketing platform designed for high-deman
 
 The core design principle is a strict separation between long-lived truth and short-lived coordination. The database is the source of truth for only two seat states: `AVAILABLE` and `BOOKED`. Temporary holds are not stored in the database. Seat locks are maintained entirely in cache with TTL. This allows abandoned flows to expire naturally without requiring cleanup jobs to revert database state. The result is a design where cache controls short-lived reservation windows and the database records only durable business outcomes.
 
-The platform is implemented on AWS using a serverless-first model. Lambda functions host business services. Aurora PostgreSQL stores durable state. ElastiCache Serverless for Valkey is used for queue state, browse caching, and seat lock state. API Gateway REST APIs expose the endpoints. Cognito secures user-facing APIs. KMS is used for signing and verifying the booking token issued by the queue service. Terraform is used to provision and manage the infrastructure.
+The platform is implemented on AWS using a serverless-first model. Lambda functions host business services. Aurora PostgreSQL stores durable state. RDS Proxy is used for database connectivity with IAM authentication. ElastiCache Serverless for Valkey is used for queue state, browse caching, and seat lock state. API Gateway REST APIs expose the endpoints. Cognito secures user-facing APIs. KMS is used for signing and verifying the booking token issued by the queue service. Terraform is used to provision and manage the infrastructure.
 
 This repository is not a toy booking example. It is designed around the practical problems that appear in real ticketing systems: concurrent seat requests, queue admission, replay safety, reservation expiry, cache-only lock semantics, and delayed payment confirmation.
 
 ![High Level Architecture Diagram](./Requirements/High_Level_Design.jpg)
-
-
-## IMPORTANT - WHY THIS LIGHT BRANCH EXISTS
-
-The main branch uses the following database connectivity architecture:
-
-```text
-AWS Lambda → RDS Proxy → Aurora Serverless v2
-```
-
-This is a production-oriented design that provides:
-
-- Connection pooling
-- Connection multiplexing
-- Improved handling of Lambda connection bursts
-- Managed failover support
-- End-to-end IAM authentication
-
-While this architecture is technically robust, it introduces additional operational costs.
-
-### The Cost Challenge
-
-This project is a personal portfolio project with very low and infrequent traffic. There are no real users generating sustained load, and the database workload consists primarily of occasional testing and demonstrations.
-
-Aurora Serverless v2 has been configured to auto-pause after 10 minutes of inactivity to minimize costs. However, when an RDS Proxy is associated with the Aurora cluster, the proxy maintains database connections and prevents the cluster from reaching its lowest-cost idle state.
-
-As a result:
-
-- RDS Proxy incurs its own charges.
-- Aurora remains active due to the proxy association.
-- The overall database cost is higher than necessary for a low-traffic portfolio project.
-
-### What Changed in This Branch
-
-This branch removes the RDS Proxy layer and connects AWS Lambda directly to Aurora Serverless v2 using IAM database authentication.
-
-The architecture becomes:
-
-```text
-AWS Lambda → Aurora Serverless v2
-```
-
-Changes include:
-
-- Removal of RDS Proxy resources.
-- Direct Lambda-to-Aurora connectivity.
-- Direct IAM database authentication.
-- Updated security group configuration.
-- Updated Lambda database connection logic.
-
-### Why This Approach Is Acceptable
-
-The primary reason for using RDS Proxy is to handle large numbers of concurrent database connections efficiently.
-
-For this project:
-
-- Traffic volume is extremely low.
-- Concurrent database connections are minimal.
-- Aurora can comfortably handle the expected workload without a proxy layer.
-
-The architectural trade-off is therefore reasonable:
-
-- Lower infrastructure cost.
-- Simpler deployment model.
-- Aurora auto-pause functionality can be fully utilized.
-- Slightly reduced scalability compared to the production-oriented proxy design.
-
-### Important Note
-
-This branch is intended for cost-optimized operation of the portfolio project.
-
-The main branch remains the reference implementation for a production-style architecture that includes RDS Proxy and demonstrates best practices for serverless database connectivity at scale.
-
-This branch prioritizes cost efficiency, while the main branch prioritizes architectural completeness.
 
 ---
 
@@ -267,6 +190,10 @@ Aurora PostgreSQL stores all durable state:
 - reservation audit
 - tickets
 
+### RDS Proxy
+
+All Lambdas that need database access connect through RDS Proxy using IAM authentication. This reduces connection churn and avoids storing DB passwords.
+
 ### ElastiCache Serverless for Valkey
 
 The project uses separate cache responsibilities.
@@ -293,7 +220,7 @@ Infrastructure is managed using Terraform modules for networking, database, cach
 
 ## Browse Service
 
-Browse service is the entry point for discovery. It serves locations, venues, performers, events, and event detail payloads. It uses Aurora PostgreSQL optionally caches responses in Valkey. Browse is read-only. It does not know anything about queue admission or locks.
+Browse service is the entry point for discovery. It serves locations, venues, performers, events, and event detail payloads. It uses Aurora PostgreSQL through RDS Proxy and optionally caches responses in Valkey. Browse is read-only. It does not know anything about queue admission or locks.
 
 The service uses two layers of caching:
 - local in-memory warm Lambda cache
@@ -661,7 +588,7 @@ Queue signs booking tokens using KMS. Reservation and Confirmation verify those 
 
 ### Database authentication
 
-Lambdas connect to Aurora Serveless Cluster via IAM Authentication. No secrets passwords are required.
+Lambdas connect to RDS Proxy using IAM DB auth tokens. No DB password is embedded in code.
 
 ### Cache authentication
 
@@ -669,7 +596,7 @@ Valkey uses IAM authentication with short-lived signed tokens and TLS.
 
 ### VPC isolation
 
-Lambdas run in private subnets and access Aurora and Valkey through VPC networking and security groups.
+Lambdas run in private subnets and access Aurora, RDS Proxy, and Valkey through VPC networking and security groups.
 
 ---
 
@@ -716,38 +643,6 @@ Seed data gives you:
 This allows end-to-end testing without external fixture generation.
 
 ---
-## Static Frontend Design and Configuration
-
-This is a plain HTML/CSS/JS static frontend intended to demonstrate the backend capabilities of the online ticketing system.
-
-### Runtime values
-Update `assets/js/config.js` with the real values for:
-
-- API Gateway base URL
-- Cognito Hosted UI domain
-- Cognito client ID
-- Redirect URI
-- Logout URI
-- AWS region
-
-### Hosting
-This project is designed for static hosting on S3 + CloudFront.
-
-### Routing model
-This frontend uses static pages plus query-string navigation, for example:
-
-- `event-detail.html?event_id=<uuid>`
-- `queue.html?event_id=<uuid>&category_id=<uuid>`
-- `seats.html?event_id=<uuid>&category_id=<uuid>`
-
-### Notes
-- Browse pages are public.
-- Queue, seats, reservation, payment, and booking confirmation require Cognito login.
-- Seat selection UI is capped at 5 seats.
-- On payment failure or confirmation failure the frontend returns to the homepage and leaves cleanup to backend TTL expiry.
-- No My Tickets page is included in this phase.
-
----
 
 ## Deployment Process
 
@@ -757,7 +652,7 @@ The deployment order should be treated as intentional.
 Create VPC, private subnets, route tables, security groups, NAT where required, and interface endpoints for KMS if that is part of the design.
 
 ### Step 2 Provision database
-Create Aurora, DB subnet groups, and enable IAM DB authentication.
+Create Aurora, RDS Proxy, DB subnet groups, and enable IAM DB authentication.
 
 ### Step 3 Provision caches
 Create:
@@ -793,6 +688,7 @@ Test:
 
 These services are not intended to be fully simulated with plain local mocks because the important behavior depends on:
 - KMS verify and sign
+- RDS Proxy IAM tokens
 - Valkey IAM auth
 - REST API Gateway event shape
 - Cognito authorizer claims

@@ -39,20 +39,11 @@ output "cloudfront_domain_name" {
 
 
 
-output "acm_dns_validation" {
-  value = module.Certificate.acm_dns_validation
+output "acm_dns_validation_tld" {
+  value = module.Certificate.acm_dns_validation_tld
   
 }
 
-
-output "debug_enable_custom_domain" {
-  value = var.enable_custom_domain
-}
-
-output "debug_root_domain" {
-  value = var.root_domain
-}
-
-output "debug_acm_cert" {
-  value = module.Certificate.acm_cert
+output "acm_dns_validation_sub" {
+  value = module.Certificate.acm_dns_validation_sub
 }
