@@ -202,7 +202,7 @@ def _seatlock_cache():
 
 
 # ----------------------------
-# Aurora Cluster + IAM DB Authentication
+# RDS Proxy + IAM DB Authentication
 # ----------------------------
 
 def _rds_iam_token(host: str, port: int, user: str, region: str) -> str:

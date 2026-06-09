@@ -56,7 +56,7 @@ module "Compute" {
     subnet_group = [module.Network.subnet_01, module.Network.subnet_02, module.Network.subnet_03]
     
     # DB Proxy and Cache ARN
-    #db_proxy_id = split(":", module.Database.db_proxy_arn)[6]
+    
     db_proxy_id = module.Database.db_proxy_resource_id
     browse_cache = module.Cache.serverless_cache_browse
     active_user_lock_cache= module.Cache.serverless_active_user_lock
@@ -74,7 +74,7 @@ module "Compute" {
     db_proxy_endpoint = module.Database.db_proxy_endpoint
     db_port           = module.Database.db_port
     db_name           = module.Database.db_name
-    db_user           = var.app_db_user   # define in Infra/variables.tf
+    db_user           = var.app_db_user   
 
     # Cache User 
     elasticache_user_id   = module.Cache.elasticache_user_id
@@ -82,9 +82,9 @@ module "Compute" {
     # Browse Cache detail
     browse_cache_endpoint = module.Cache.browse_cache_endpoint
     browse_cache_port     = module.Cache.browse_cache_port
-    browse_cache_name     = "browse-cache" # must match actual serverless cache name
+    browse_cache_name     = module.Cache.browse_cache_name 
     browse_cache_ttl_seconds = 30
-    
+        
     #Active User Cache detail
     active_users_cache_endpoint = module.Cache.active_users_cache_endpoint
     active_users_cache_port     = module.Cache.active_users_cache_port
