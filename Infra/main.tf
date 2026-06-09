@@ -82,9 +82,8 @@ module "Compute" {
     # Browse Cache detail
     browse_cache_endpoint = module.Cache.browse_cache_endpoint
     browse_cache_port     = module.Cache.browse_cache_port
-    browse_cache_name     = "browse-cache" # must match actual serverless cache name
+    browse_cache_name     = module.Cache.browse_cache_name
     browse_cache_ttl_seconds = 30
-    
     #Active User Cache detail
     active_users_cache_endpoint = module.Cache.active_users_cache_endpoint
     active_users_cache_port     = module.Cache.active_users_cache_port
