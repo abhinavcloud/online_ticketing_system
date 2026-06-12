@@ -14,3 +14,7 @@ variable "subnet_group" {
 }
 
 
+variable "preferred_cache_cluster_azs" {
+    description = "list of azs"
+    type = list(string)
+}

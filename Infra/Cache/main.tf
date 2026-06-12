@@ -72,16 +72,35 @@ resource "aws_elasticache_subnet_group" "elasticache_subnet" {
 }
 
 # Create an Elasticache Provisoned cluster for Browse Cache
-resource "aws_elasticache_cluster" "browse_cache_cluster" {
-  engine = "valkey"
-  cluster_id = "browse-cache-cluster"
-  node_type = "cache.t4g.micro"
-  num_cache_nodes = 1
-  apply_immediately = true
-  snapshot_retention_limit = 1
-  security_group_ids       = [aws_security_group.elasticache_sg.id]
-  subnet_group_name        = aws_elasticache_subnet_group.elasticache_subnet.id
+
+resource "aws_elasticache_replication_group" "browse_cache_cluster" {
+  replication_group_id = "browse-cache-cluster"
+  description          = "Highly available browse cache using Valkey across 3 AZs"
+
+  engine               = "valkey"
+  engine_version       = "7.2"
+  node_type            = "cache.t4g.micro"
+
+  # 1 primary + 2 replicas = 3 nodes total across 3 AZs
+  num_cache_clusters          = 3
+  preferred_cache_cluster_azs = var.preferred_cache_cluster_azs
+
+  automatic_failover_enabled = true
+  multi_az_enabled           = true
+
+  subnet_group_name  = aws_elasticache_subnet_group.browse_cache_subnet_group.name
+  security_group_ids = [aws_security_group.elasticache_sg.id]
+
+  parameter_group_name       = "default.valkey7"
+  snapshot_retention_limit   = 1
+  apply_immediately          = true
+  auto_minor_version_upgrade = true
+
+  tags = {
+    Name = "browse-cache-cluster"
+  }
 }
+
 
 
 # Create an Elasticache Serverless cluster for Active Users

@@ -108,6 +108,9 @@ module "Cache" {
     vpc_id = module.Network.vpc_id
     referenced_security_group_id = aws_security_group.lambda_sg.id
     subnet_group = [module.Network.subnet_01, module.Network.subnet_02, module.Network.subnet_03]
+    preferred_cache_cluster_azs   = data.aws_availability_zones.az.names4
+    
+
 }
 
 module "Notification" {
