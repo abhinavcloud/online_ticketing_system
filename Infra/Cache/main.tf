@@ -65,7 +65,11 @@ resource "aws_elasticache_serverless_cache" "browse_cache" {
   user_group_id = aws_elasticache_user_group.elasticache_user_group.id
 }
 
-
+#Elasticache Subnet Group
+resource "aws_elasticache_subnet_group" "elasticache_subnet" {
+  name       = "tf-test-cache-subnet"
+  subnet_ids = var.subnet_group
+}
 
 # Create an Elasticache Provisoned cluster for Browse Cache
 resource "aws_elasticache_cluster" "browse_cache_cluster" {
@@ -76,7 +80,7 @@ resource "aws_elasticache_cluster" "browse_cache_cluster" {
   apply_immediately = true
   snapshot_retention_limit = 1
   security_group_ids       = [aws_security_group.elasticache_sg.id]
-  subnet_group_name        = var.subnet_name
+  subnet_group_name        = aws_elasticache_subnet_group.elasticache_subnet.id
 }
 
 

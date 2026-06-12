@@ -23,6 +23,3 @@ output "vpc_endpoint_sns_sg" {
     value = aws_security_group.sns_vpce_sg.id
 }
 
-output "subnet_name" {
-    value = aws_subnet.private_subnets["private_subnet_1"].id
-}
