@@ -1,20 +1,20 @@
 output "serverless_cache_browse" {
-    value = aws_elasticache_serverless_cache.browse_cache.arn
+    value = aws_elasticache_replication_group.browse_cache.arn
 }
 
 
 output "browse_cache_endpoint" {
-  value = aws_elasticache_serverless_cache.browse_cache.endpoint[0].address
+  value = aws_elasticache_replication_group.browse_cache.endpoint[0].address
 }
 
 
 output "browse_cache_port" {
-  value = aws_elasticache_serverless_cache.browse_cache.endpoint[0].port
+  value = aws_elasticache_replication_group.browse_cache.endpoint[0].port
 }
 
 
 output "browse_cache_name" {
-  value = aws_elasticache_serverless_cache.browse_cache.name
+  value = aws_elasticache_replication_group.browse_cache.name
 }
 
 
