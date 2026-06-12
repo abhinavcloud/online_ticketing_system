@@ -78,7 +78,7 @@ resource "aws_elasticache_replication_group" "browse_cache" {
   description          = "Highly available browse cache using Valkey across 3 AZs"
 
   engine               = "valkey"
-  engine_version       = "9"
+  engine_version       = "9.0"
   node_type            = "cache.t4g.micro"
 
   # 1 primary + 2 replicas = 3 nodes total across 3 AZs
