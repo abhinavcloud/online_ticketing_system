@@ -43,42 +43,42 @@ resource "aws_vpc_security_group_ingress_rule" "elasticache_sg_ingress_rule" {
 
 
 # Create an Elasticache Serverless cluster for Browse Cache
-resource "aws_elasticache_serverless_cache" "browse_cache" {
-  engine = "valkey"
-  name   = "browse-cache"
-  cache_usage_limits {
-    data_storage {
-      maximum = 10
-      unit    = "GB"
-    }
-    ecpu_per_second {
-      maximum = 5000
-    }
-  }
-  daily_snapshot_time      = "09:00"
-  description              = "Elasticache for Browsing"
-  #kms_key_id               = aws_kms_key.test.arn
-  major_engine_version     = "9"
-  snapshot_retention_limit = 1
-  security_group_ids       = [aws_security_group.elasticache_sg.id]
-  subnet_ids               = var.subnet_group
-  user_group_id = aws_elasticache_user_group.elasticache_user_group.id
-}
+#resource "aws_elasticache_serverless_cache" "browse_cache" {
+#  engine = "valkey"
+#  name   = "browse-cache"
+#  cache_usage_limits {
+#    data_storage {
+#      maximum = 10
+#      unit    = "GB"
+#    }
+#    ecpu_per_second {
+#      maximum = 5000
+#    }
+#  }
+#  daily_snapshot_time      = "09:00"
+#  description              = "Elasticache for Browsing"
+#  #kms_key_id               = aws_kms_key.test.arn
+#  major_engine_version     = "9"
+#  snapshot_retention_limit = 1
+#  security_group_ids       = [aws_security_group.elasticache_sg.id]
+#  subnet_ids               = var.subnet_group
+#  user_group_id = aws_elasticache_user_group.elasticache_user_group.id
+#}
 
 #Elasticache Subnet Group
 resource "aws_elasticache_subnet_group" "elasticache_subnet" {
-  name       = "tf-test-cache-subnet"
+  name       = "elasticache-subnet-group"
   subnet_ids = var.subnet_group
 }
 
 # Create an Elasticache Provisoned cluster for Browse Cache
 
-resource "aws_elasticache_replication_group" "browse_cache_cluster" {
-  replication_group_id = "browse-cache-cluster"
+resource "aws_elasticache_replication_group" "browse_cache" {
+  replication_group_id = "browse-cache"
   description          = "Highly available browse cache using Valkey across 3 AZs"
 
   engine               = "valkey"
-  engine_version       = "7.2"
+  engine_version       = "9"
   node_type            = "cache.t4g.micro"
 
   # 1 primary + 2 replicas = 3 nodes total across 3 AZs
