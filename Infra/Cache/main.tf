@@ -89,7 +89,7 @@ resource "aws_elasticache_replication_group" "browse_cache" {
 #  automatic_failover_enabled = true
 #  multi_az_enabled           = true
 
-  subnet_group_name  = aws_elasticache_subnet_group.elasticache_subnet.id
+  subnet_group_name  = aws_elasticache_subnet_group.elasticache_subnet.name
   security_group_ids = [aws_security_group.elasticache_sg.id]
 
   parameter_group_name       = "default.valkey9"
@@ -144,7 +144,7 @@ resource "aws_elasticache_replication_group" "active_users" {
 #  automatic_failover_enabled = true
 #  multi_az_enabled           = true
 
-  subnet_group_name  = aws_elasticache_subnet_group.elasticache_subnet.id
+  subnet_group_name  = aws_elasticache_subnet_group.elasticache_subnet.name
   security_group_ids = [aws_security_group.elasticache_sg.id]
 
   parameter_group_name       = "default.valkey9"
@@ -200,7 +200,7 @@ resource "aws_elasticache_replication_group" "seat_lock" {
 #  automatic_failover_enabled = true
 #  multi_az_enabled           = true
 
-  subnet_group_name  = aws_elasticache_subnet_group.elasticache_subnet.id
+  subnet_group_name  = aws_elasticache_subnet_group.elasticache_subnet.name
   security_group_ids = [aws_security_group.elasticache_sg.id]
 
   parameter_group_name       = "default.valkey9"
