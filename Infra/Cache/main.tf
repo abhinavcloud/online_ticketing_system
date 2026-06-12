@@ -92,7 +92,7 @@ resource "aws_elasticache_replication_group" "browse_cache" {
 
   subnet_group_name  = aws_elasticache_subnet_group.elasticache_subnet.name
   security_group_ids = [aws_security_group.elasticache_sg.id]
-  user_group_ids = [aws_elasticache_user_group.elasticache_user_group.id]
+  #user_group_ids = [aws_elasticache_user_group.elasticache_user_group.id]
 
   parameter_group_name       = "default.valkey9"
   snapshot_retention_limit   = 1
