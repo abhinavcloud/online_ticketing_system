@@ -41,7 +41,7 @@ resource "aws_iam_policy" "lambda_elasticache_policy" {
       "Sid": "ElastiCacheReadOnlyDiscovery",
       "Effect": "Allow",
       "Action": [
-        "elasticache:DescribeServerlessCaches",
+        "elasticache:DescribeReplicationGroups",
         "elasticache:DescribeUsers",
         "elasticache:DescribeUserGroups"
       ],
