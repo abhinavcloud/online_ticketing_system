@@ -81,7 +81,7 @@ resource "aws_elasticache_replication_group" "browse_cache" {
   engine_version       = "9.0"
   node_type            = "cache.t4g.micro"
   transit_encryption_enabled = true
-  transit_encryption_mode    = "preferred"
+  transit_encryption_mode    = "required"
 
  # Single node
   num_cache_clusters          = 1
@@ -139,7 +139,7 @@ resource "aws_elasticache_replication_group" "active_users" {
   engine_version       = "9.0"
   node_type            = "cache.t4g.micro"
   transit_encryption_enabled = true
-  transit_encryption_mode    = "preferred"
+  transit_encryption_mode    = "required"
 
  # Single node
   num_cache_clusters          = 1
@@ -196,7 +196,7 @@ resource "aws_elasticache_replication_group" "seat_lock" {
   engine_version       = "9.0"
   node_type            = "cache.t4g.micro"
   transit_encryption_enabled = true
-  transit_encryption_mode    = "preferred"
+  transit_encryption_mode    = "required"
 
  # Single node
   num_cache_clusters          = 1
