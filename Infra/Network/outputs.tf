@@ -24,5 +24,5 @@ output "vpc_endpoint_sns_sg" {
 }
 
 output "subnet_name" {
-    value = aws_subnet.private_subnets["private_subnet_1"].name
+    value = aws_subnet.private_subnets["private_subnet_1"].id
 }
