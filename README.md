@@ -328,7 +328,7 @@ Aurora PostgreSQL stores all durable state:
 - reservation audit
 - tickets
 
-### ElastiCache Serverless for Valkey
+### ElastiCache Provisioned (Single Node) for Valkey
 
 The project uses separate cache responsibilities.
 
