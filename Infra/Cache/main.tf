@@ -88,7 +88,7 @@ resource "aws_elasticache_replication_group" "browse_cache_cluster" {
   automatic_failover_enabled = true
   multi_az_enabled           = true
 
-  subnet_group_name  = aws_elasticache_subnet_group.browse_cache_subnet_group.name
+  subnet_group_name  = aws_elasticache_subnet_group.elasticache_subnet.id
   security_group_ids = [aws_security_group.elasticache_sg.id]
 
   parameter_group_name       = "default.valkey7"
