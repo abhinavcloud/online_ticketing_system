@@ -141,7 +141,7 @@ def _elasticache_iam_token(user_id: str, cache_name: str, region: str) -> str:
 
     # Request: http://{cache_name}/?Action=connect&User={user_id}&ResourceType=ServerlessCache
     url = f"http://{cache_name}/"
-    params = {"Action": "connect", "User": user_id, "ResourceType": "ServerlessCache"}
+    params = {"Action": "connect", "User": user_id}
 
     aws_req = AWSRequest(method="GET", url=url, params=params)
     sess = Session()

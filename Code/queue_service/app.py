@@ -106,7 +106,7 @@ def _elasticache_iam_token(user_id: str, cache_name: str, region: str) -> str:
     """Build a SigV4 presigned URL used as password for ElastiCache Serverless IAM auth (TLS required)."""
     cache_name = cache_name.lower()
     url = f"http://{cache_name}/"
-    params = {"Action": "connect", "User": user_id, "ResourceType": "ServerlessCache"}
+    params = {"Action": "connect", "User": user_id}
 
     aws_req = AWSRequest(method="GET", url=url, params=params)
     sess = Session()
