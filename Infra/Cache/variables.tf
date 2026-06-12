@@ -12,3 +12,8 @@ variable "subnet_group" {
     description = "list of subnet groups"
     type = list(string)
 }
+
+
+variable "subnet_name" {
+    type = string
+}

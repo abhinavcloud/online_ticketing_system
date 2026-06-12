@@ -66,6 +66,20 @@ resource "aws_elasticache_serverless_cache" "browse_cache" {
 }
 
 
+
+# Create an Elasticache Provisoned cluster for Browse Cache
+resource "aws_elasticache_cluster" "browse_cache" {
+  engine = "valkey"
+  cluster_id = "browse-cache"
+  node_type = "cache.t4g.micro"
+  num_cache_nodes = 1
+  apply_immediately = true
+  snapshot_retention_limit = 1
+  security_group_ids       = [aws_security_group.elasticache_sg.id]
+  subnet_group_name        = var.subnet_name
+}
+
+
 # Create an Elasticache Serverless cluster for Active Users
 resource "aws_elasticache_serverless_cache" "active_users" {
   engine = "valkey"
