@@ -68,7 +68,7 @@ resource "aws_elasticache_serverless_cache" "browse_cache" {
 
 
 # Create an Elasticache Provisoned cluster for Browse Cache
-resource "aws_elasticache_cluster" "browse_cache" {
+resource "aws_elasticache_cluster" "browse_cache-cluster" {
   engine = "valkey"
   cluster_id = "browse-cache"
   node_type = "cache.t4g.micro"
