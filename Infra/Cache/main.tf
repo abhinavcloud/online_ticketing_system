@@ -83,7 +83,7 @@ resource "aws_elasticache_replication_group" "browse_cache" {
 
  # Single node
   num_cache_clusters          = 1
-  preferred_cache_cluster_azs = var.preferred_cache_cluster_azs
+  preferred_cache_cluster_azs = [var.preferred_cache_cluster_azs]
 
 #  automatic_failover_enabled = true
 #  multi_az_enabled           = true

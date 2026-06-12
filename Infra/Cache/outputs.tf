@@ -1,5 +1,5 @@
 output "browse_cache_arn" {
-    value = aaws_elasticache_replication_group.browse_cache.arn
+    value = aws_elasticache_replication_group.browse_cache.arn
 }
 
 
