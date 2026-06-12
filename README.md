@@ -3,7 +3,7 @@
 
 ## Table of Contents
 - [0. Overview](#overview)
-- [1. IMPORTANT - WHY THIS LIGHT BRANCH EXISTS](#important---why-this-light-branch-exists)
+- [1. IMPORTANT - WHY THIS LIGHTER BRANCH EXISTS](#important---why-this-lighter-branch-exists)
 - [2. Problem Statement](#problem-statement)
 - [3. Objectives](#objectives)
 - [4. Functional Scope](#functional-scope)
@@ -43,78 +43,139 @@ This repository is not a toy booking example. It is designed around the practica
 ![High Level Architecture Diagram](./Requirements/High_Level_Design.jpg)
 
 
-## IMPORTANT - WHY THIS LIGHT BRANCH EXISTS
+## IMPORTANT - WHY THIS LIGHTER BRANCH EXISTS
 
-The main branch uses the following database connectivity architecture:
+The **light branch** already introduces one major cost optimization over the main branch.
 
-```text
-AWS Lambda → RDS Proxy → Aurora Serverless v2
-```
+In the light branch, the database connectivity architecture was simplified from:
 
-This is a production-oriented design that provides:
+    AWS Lambda → RDS Proxy → Aurora Serverless v2
 
-- Connection pooling
-- Connection multiplexing
-- Improved handling of Lambda connection bursts
-- Managed failover support
-- End-to-end IAM authentication
+to:
 
-While this architecture is technically robust, it introduces additional operational costs.
+    AWS Lambda → Aurora Serverless v2
 
-### The Cost Challenge
+This change was made to remove the ongoing cost of **RDS Proxy** and to allow **Aurora Serverless v2 auto-pause** to function properly for a low-traffic personal portfolio project.
 
-This project is a personal portfolio project with very low and infrequent traffic. There are no real users generating sustained load, and the database workload consists primarily of occasional testing and demonstrations.
+However, the light branch still retained the following cache architecture:
 
-Aurora Serverless v2 has been configured to auto-pause after 10 minutes of inactivity to minimize costs. However, when an RDS Proxy is associated with the Aurora cluster, the proxy maintains database connections and prevents the cluster from reaching its lowest-cost idle state.
+    AWS Lambda → ElastiCache Serverless
 
-As a result:
+This lighter branch is built on top of the light branch and introduces one additional cost optimization in the caching layer.
 
-- RDS Proxy incurs its own charges.
-- Aurora remains active due to the proxy association.
-- The overall database cost is higher than necessary for a low-traffic portfolio project.
+### The Additional Cost Challenge
+
+This project is a personal portfolio project with very low and infrequent traffic. There are no real users generating sustained cache load, and cache activity is limited primarily to occasional testing, demonstrations, and interview walkthroughs.
+
+While ElastiCache Serverless is operationally convenient, it introduced additional networking cost through **VPC endpoint usage**. For a low-traffic environment, these fixed infrastructure charges became disproportionate to the actual cache workload.
+
+A direct replacement with a **multi-node provisioned replication group** was also evaluated, but that approach introduced trade-offs that were not justified for this project:
+
+- Higher infrastructure cost due to primary and replica nodes
+- Standby replica capacity that would remain mostly unused under normal traffic conditions
+- Additional application-layer complexity around primary and reader endpoint behavior
+- Potential Lambda refactoring to support replica-aware read/write cache routing
+
+For this project, those trade-offs do not provide enough value.
 
 ### What Changed in This Branch
 
-This branch removes the RDS Proxy layer and connects AWS Lambda directly to Aurora Serverless v2 using IAM database authentication.
+This lighter branch keeps the database simplification already introduced in the light branch:
 
-The architecture becomes:
+    AWS Lambda → Aurora Serverless v2
 
-```text
-AWS Lambda → Aurora Serverless v2
-```
+and additionally changes the cache architecture from:
 
-Changes include:
+    AWS Lambda → ElastiCache Serverless
 
-- Removal of RDS Proxy resources.
-- Direct Lambda-to-Aurora connectivity.
-- Direct IAM database authentication.
-- Updated security group configuration.
-- Updated Lambda database connection logic.
+to:
+
+    AWS Lambda → ElastiCache Provisioned (Single Node)
+
+Changes in this branch therefore include:
+
+- Retention of the direct **Lambda → Aurora Serverless v2** model from the light branch
+- Retention of the **RDS Proxy removal**
+- Replacement of **ElastiCache Serverless** with a **single-node provisioned Valkey cache**
+- Elimination of the serverless cache VPC endpoint-related cost overhead
+- Preservation of a simple **single cache endpoint** model for Lambda
+- Avoidance of unnecessary cache read/write endpoint refactoring in the application layer
 
 ### Why This Approach Is Acceptable
 
-The primary reason for using RDS Proxy is to handle large numbers of concurrent database connections efficiently.
+The primary reasons for choosing **ElastiCache Serverless** or a **multi-node provisioned replication design** are:
 
-For this project:
+- managed elasticity
+- built-in high availability
+- replica-based read scaling
+- stronger production-style resilience
 
-- Traffic volume is extremely low.
-- Concurrent database connections are minimal.
-- Aurora can comfortably handle the expected workload without a proxy layer.
+For this portfolio project:
 
-The architectural trade-off is therefore reasonable:
+- cache traffic is extremely low
+- cache availability is not business-critical
+- cached data is ephemeral and can be rebuilt
+- the system does not need replica-based read scaling
+- the cost of additional managed abstraction is not justified
+- the complexity of refactoring Lambda code for provisioned multi-node cache behavior is unnecessary
 
-- Lower infrastructure cost.
-- Simpler deployment model.
-- Aurora auto-pause functionality can be fully utilized.
-- Slightly reduced scalability compared to the production-oriented proxy design.
+Because of that, a **single-node provisioned cache** is the most reasonable trade-off for this branch.
+
+The architecture intentionally favors:
+
+- lower infrastructure cost
+- simpler deployment
+- simpler Lambda integration
+- minimal deviation in application cache access logic
+
+in exchange for:
+
+- reduced cache-layer high availability
+- no replica-based read scaling
+- single-node cache failure being a temporary cache outage until recovery
+
+### Branch Positioning
+
+This lighter branch should be viewed as the **next cost-optimized step after the light branch**.
+
+The branch evolution is therefore:
+
+    Main branch
+      = production-style reference architecture
+      = RDS Proxy + Aurora Serverless v2
+      = ElastiCache Serverless
+
+    Light branch
+      = removes RDS Proxy
+      = direct Lambda → Aurora Serverless v2
+      = still uses ElastiCache Serverless
+
+    Lighter branch
+      = keeps direct Lambda → Aurora Serverless v2
+      = replaces ElastiCache Serverless with single-node provisioned ElastiCache
 
 ### Important Note
 
-This branch is intended for cost-optimized operation of the portfolio project.
+This lighter branch is intended for the **lowest-cost practical operation** of the portfolio project.
 
-The main branch remains the reference implementation for a production-style architecture that includes RDS Proxy and demonstrates best practices for serverless database connectivity at scale.
+It is specifically designed for:
 
-This branch prioritizes cost efficiency, while the main branch prioritizes architectural completeness.
+- interview demonstrations
+- low-frequency testing
+- personal project hosting
+- minimal ongoing infrastructure cost
+
+The **main branch** remains the reference implementation for the most production-oriented architecture.
+
+The **light branch** remains the intermediate cost-optimized design that removes RDS Proxy while retaining ElastiCache Serverless.
+
+This **lighter branch** goes one step further by also simplifying the cache layer for cost efficiency and reduced application complexity.
+
+In summary:
+
+- **main branch** prioritizes architectural completeness
+- **light branch** prioritizes database cost optimization
+- **lighter branch** prioritizes both database and cache cost optimization
 
 ---
 

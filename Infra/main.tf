@@ -57,7 +57,7 @@ module "Compute" {
     subnet_group = [module.Network.subnet_01, module.Network.subnet_02, module.Network.subnet_03]
     
     # Cache ARN
-    browse_cache = module.Cache.serverless_cache_browse
+    browse_cache = module.Cache.browse_cache_arn
     active_user_lock_cache= module.Cache.serverless_active_user_lock
     seat_lock_cache = module.Cache.serverless_seat_lock
     user = module.Cache.user
@@ -108,7 +108,7 @@ module "Cache" {
     vpc_id = module.Network.vpc_id
     referenced_security_group_id = aws_security_group.lambda_sg.id
     subnet_group = [module.Network.subnet_01, module.Network.subnet_02, module.Network.subnet_03]
-    preferred_cache_cluster_azs   = data.aws_availability_zones.az.names
+    preferred_cache_cluster_azs   = data.aws_availability_zones.az.names[0]
 
 
 }
