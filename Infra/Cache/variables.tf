@@ -14,6 +14,3 @@ variable "subnet_group" {
 }
 
 
-variable "subnet_name" {
-    type = string
-}
