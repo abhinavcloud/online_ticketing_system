@@ -104,48 +104,108 @@ resource "aws_elasticache_replication_group" "browse_cache" {
 
 
 # Create an Elasticache Serverless cluster for Active Users
-resource "aws_elasticache_serverless_cache" "active_users" {
-  engine = "valkey"
-  name   = "active-users"
-  cache_usage_limits {
-    data_storage {
-      maximum = 10
-      unit    = "GB"
-    }
-    ecpu_per_second {
-      maximum = 5000
-    }
-  }
-  daily_snapshot_time      = "09:00"
-  description              = "Elasticache for holding Active Users"
-  #kms_key_id               = aws_kms_key.test.arn
-  major_engine_version     = "9"
-  snapshot_retention_limit = 1
-  security_group_ids       = [aws_security_group.elasticache_sg.id]
-  subnet_ids               = var.subnet_group
-  user_group_id = aws_elasticache_user_group.elasticache_user_group.id
+#resource "aws_elasticache_serverless_cache" "active_users" {
+#  engine = "valkey"
+#  name   = "active-users"
+#  cache_usage_limits {
+#    data_storage {
+#      maximum = 10
+#      unit    = "GB"
+#    }
+#    ecpu_per_second {
+#      maximum = 5000
+#    }
+#  }
+#  daily_snapshot_time      = "09:00"
+#  description              = "Elasticache for holding Active Users"
+#  #kms_key_id               = aws_kms_key.test.arn
+#  major_engine_version     = "9"
+#  snapshot_retention_limit = 1
+#  security_group_ids       = [aws_security_group.elasticache_sg.id]
+#  subnet_ids               = var.subnet_group
+#  user_group_id = aws_elasticache_user_group.elasticache_user_group.id
+#}
+
+
+resource "aws_elasticache_replication_group" "active_users" {
+  replication_group_id = "active-users"
+  description          = "Highly available browse cache using Valkey across 3 AZs"
+
+  engine               = "valkey"
+  engine_version       = "9.0"
+  node_type            = "cache.t4g.micro"
+
+ # Single node
+  num_cache_clusters          = 1
+  preferred_cache_cluster_azs = [var.preferred_cache_cluster_azs]
+
+#  automatic_failover_enabled = true
+#  multi_az_enabled           = true
+
+  subnet_group_name  = aws_elasticache_subnet_group.elasticache_subnet.id
+  security_group_ids = [aws_security_group.elasticache_sg.id]
+
+  parameter_group_name       = "default.valkey9"
+  snapshot_retention_limit   = 1
+  apply_immediately          = true
+  auto_minor_version_upgrade = true
+
+ tags = {
+   Name = "active-users-cache"
+ }
 }
 
 
+
+
 # Create an Elasticache Serverless cluster for Seat Locks
-resource "aws_elasticache_serverless_cache" "seat_lock" {
-  engine = "valkey"
-  name   = "seat-lock"
-  cache_usage_limits {
-    data_storage {
-      maximum = 10
-      unit    = "GB"
-    }
-    ecpu_per_second {
-      maximum = 5000
-    }
-  }
-  daily_snapshot_time      = "09:00"
-  description              = "Elasticache for holding locked seats"
-  #kms_key_id               = aws_kms_key.test.arn
-  major_engine_version     = "9"
-  snapshot_retention_limit = 1
-  security_group_ids       = [aws_security_group.elasticache_sg.id]
-  subnet_ids               = var.subnet_group
-  user_group_id = aws_elasticache_user_group.elasticache_user_group.id
+#resource "aws_elasticache_serverless_cache" "seat_lock" {
+#  engine = "valkey"
+#  name   = "seat-lock"
+#  cache_usage_limits {
+#    data_storage {
+#      maximum = 10
+#      unit    = "GB"
+#    }
+#    ecpu_per_second {
+#      maximum = 5000
+#    }
+#  }
+#  daily_snapshot_time      = "09:00"
+#  description              = "Elasticache for holding locked seats"
+#  #kms_key_id               = aws_kms_key.test.arn
+#  major_engine_version     = "9"
+#  snapshot_retention_limit = 1
+#  security_group_ids       = [aws_security_group.elasticache_sg.id]
+#  subnet_ids               = var.subnet_group
+#  user_group_id = aws_elasticache_user_group.elasticache_user_group.id
+#}
+
+
+resource "aws_elasticache_replication_group" "seat_lock" {
+  replication_group_id = "seat-lock"
+  description          = "Highly available browse cache using Valkey across 3 AZs"
+
+  engine               = "valkey"
+  engine_version       = "9.0"
+  node_type            = "cache.t4g.micro"
+
+ # Single node
+  num_cache_clusters          = 1
+  preferred_cache_cluster_azs = [var.preferred_cache_cluster_azs]
+
+#  automatic_failover_enabled = true
+#  multi_az_enabled           = true
+
+  subnet_group_name  = aws_elasticache_subnet_group.elasticache_subnet.id
+  security_group_ids = [aws_security_group.elasticache_sg.id]
+
+  parameter_group_name       = "default.valkey9"
+  snapshot_retention_limit   = 1
+  apply_immediately          = true
+  auto_minor_version_upgrade = true
+
+ tags = {
+   Name = "seat-lock-cache"
+ }
 }

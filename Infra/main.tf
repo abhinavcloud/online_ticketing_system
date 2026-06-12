@@ -58,8 +58,8 @@ module "Compute" {
     
     # Cache ARN
     browse_cache = module.Cache.browse_cache_arn
-    active_user_lock_cache= module.Cache.serverless_active_user_lock
-    seat_lock_cache = module.Cache.serverless_seat_lock
+    active_user_lock_cache= module.Cache.active_users_arn
+    seat_lock_cache = module.Cache.seat_lock_arn
     user = module.Cache.user
     
     # Security Groups
