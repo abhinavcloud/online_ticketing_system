@@ -159,7 +159,7 @@ resource "aws_api_gateway_integration" "event_detail_get_integration" {
 
 # --------------------------------------------------------------------------------
 
-# Create APIGateway Permission to invoke browse_service lambda from API Gateway
+# Create APIGateway Permission to invoke browse_service lambda from API Gateway (Lambda Resource Permission)
 resource "aws_lambda_permission" "apigw_invoke_browse_service" {
   statement_id  = "AllowAPIGatewayInvokeBrowseService"
   action        = "lambda:InvokeFunction"
@@ -274,7 +274,7 @@ resource "aws_api_gateway_integration" "queue_release_post_integration" {
 
 # --------------------------------------------------------------------------------
 
-# Create API gateway permission to invoke queue_service lambda from API Gateway
+# Create API gateway permission to invoke queue_service lambda from API Gateway  (Lambda Resource Permission)
 resource "aws_lambda_permission" "apigw_invoke_queue_service" {
   statement_id  = "AllowAPIGatewayInvokeQueueService"
   action        = "lambda:InvokeFunction"
@@ -328,7 +328,7 @@ resource "aws_api_gateway_integration" "event_seats_get_integration" {
 
 # --------------------------------------------------------------------------------
 
-# Create API gateway permission to invoke seat_availability_service lambda from API Gateway
+# Create API gateway permission to invoke seat_availability_service lambda from API Gateway  (Lambda Resource Permission)
 resource "aws_lambda_permission" "apigw_invoke_seat_availability_service" {
   statement_id  = "AllowAPIGatewayInvokeSeatAvailabilityService"
   action        = "lambda:InvokeFunction"
@@ -368,7 +368,7 @@ resource "aws_api_gateway_integration" "reserve_ticket_post_integration" {
 
 # --------------------------------------------------------------------------------
 
-# Create API gateway permission to invoke reservation_service lambda from API Gateway
+# Create API gateway permission to invoke reservation_service lambda from API Gateway  (Lambda Resource Permission)
 resource "aws_lambda_permission" "apigw_invoke_reservation_service" {
   statement_id  = "AllowAPIGatewayInvokeReservationService"
   action        = "lambda:InvokeFunction"
@@ -407,7 +407,7 @@ resource "aws_api_gateway_integration" "payment_post_integration" {
 
 # --------------------------------------------------------------------------------
 
-# Create API gateway permission to invoke payment_service lambda from API Gateway
+# Create API gateway permission to invoke payment_service lambda from API Gateway  (Lambda Resource Permission)
 resource "aws_lambda_permission" "apigw_invoke_payment_service" {
   statement_id  = "AllowAPIGatewayInvokePaymentService"
   action        = "lambda:InvokeFunction"
@@ -447,7 +447,7 @@ resource "aws_api_gateway_integration" "booking_post_integration" {
 
 # --------------------------------------------------------------------------------
 
-# Create API gateway permission to invoke confirmation_service lambda from API Gateway
+# Create API gateway permission to invoke confirmation_service lambda from API Gateway  (Lambda Resource Permission)
 resource "aws_lambda_permission" "apigw_invoke_confirmation_service" {
   statement_id  = "AllowAPIGatewayInvokeConfirmationService"
   action        = "lambda:InvokeFunction"
