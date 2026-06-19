@@ -30,10 +30,10 @@ resource "aws_iam_policy" "lambda_elasticache_policy" {
     Version = "2012-10-17"
     "Statement": [
     {
-      "Sid": "ElastiCacheServerlessIamAuthConnect",
+      "Sid": "ElastiCacheIAMAuthConnect",
       "Effect": "Allow",
       "Action": "elasticache:Connect",
-      "Resource": [var.browse_cache]
+      "Resource": [var.browse_cache, var.user]
       #"Resource": [var.browse_cache, var.active_user_lock_cache, var.seat_lock_cache, var.user]
     },
 
