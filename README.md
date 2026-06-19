@@ -3,7 +3,7 @@
 
 ## Table of Contents
 - [0. Overview](#overview)
-- [1. IMPORTANT - WHY THIS LIGHTER BRANCH EXISTS](#important---why-this-lighter-branch-exists)
+- [1. IMPORTANT - WHY THIS LIGHTER BRANCH EXISTS](#important---why-this-lightest-branch-exists)
 - [2. Problem Statement](#problem-statement)
 - [3. Objectives](#objectives)
 - [4. Functional Scope](#functional-scope)
@@ -43,7 +43,7 @@ This repository is not a toy booking example. It is designed around the practica
 ![High Level Architecture Diagram](./Requirements/High_Level_Design.jpg)
 
 
-## IMPORTANT - WHY THIS LIGHTER BRANCH EXISTS
+## IMPORTANT - WHY THIS LIGHTEST BRANCH EXISTS
 
 The **light branch** already introduces one major cost optimization over the main branch.
 
@@ -63,6 +63,10 @@ However, the light branch still retained the following cache architecture:
 
 This lighter branch is built on top of the light branch and introduces one additional cost optimization in the caching layer.
 
+---
+
+## Lighter Branch 
+
 ### The Additional Cost Challenge
 
 This project is a personal portfolio project with very low and infrequent traffic. There are no real users generating sustained cache load, and cache activity is limited primarily to occasional testing, demonstrations, and interview walkthroughs.
@@ -78,9 +82,9 @@ A direct replacement with a **multi-node provisioned replication group** was als
 
 For this project, those trade-offs do not provide enough value.
 
-### What Changed in This Branch
+### What Changed in the Lighter Branch
 
-This lighter branch keeps the database simplification already introduced in the light branch:
+The lighter branch keeps the database simplification already introduced in the light branch:
 
     AWS Lambda → Aurora Serverless v2
 
@@ -90,53 +94,111 @@ and additionally changes the cache architecture from:
 
 to:
 
-    AWS Lambda → ElastiCache Provisioned (Single Node)
+    AWS Lambda → ElastiCache Provisioned (Single Node per workload)
 
 Changes in this branch therefore include:
 
 - Retention of the direct **Lambda → Aurora Serverless v2** model from the light branch
 - Retention of the **RDS Proxy removal**
-- Replacement of **ElastiCache Serverless** with a **single-node provisioned Valkey cache**
+- Replacement of **ElastiCache Serverless** with **provisioned Valkey caches**
 - Elimination of the serverless cache VPC endpoint-related cost overhead
-- Preservation of a simple **single cache endpoint** model for Lambda
+- Preservation of simple **single primary endpoint per cache**
 - Avoidance of unnecessary cache read/write endpoint refactoring in the application layer
+
+This still maintained **separate caches** for:
+
+- browse
+- queue
+- seat lock
+
+---
+
+## Lightest Branch (Final Cost Optimization)
+
+After implementing the lighter branch, one additional inefficiency was observed.
+
+Even with provisioned caching, the system still maintained **multiple always-on cache instances**, each with:
+
+- very low utilization
+- overlapping load patterns
+- identical access patterns (key-value, TTL-based, ephemeral data)
+
+For a low-traffic system, this resulted in **underutilized cache nodes with fixed hourly cost**.
+
+### What Changed in the Lightest Branch
+
+The cache architecture was further simplified from:
+
+    browse-cache
+    queue-cache
+    seat-lock-cache
+
+to:
+
+    AWS Lambda → Single Shared Browse Cache
+
+All services now connect to **one shared Valkey cache instance**.
+
+### How This Works
+
+Instead of physically separating caches, the system uses **logical key namespacing**:
+
+    browse:{key}
+    queue:{eventId:categoryId}:...
+    seatlock:{eventId:categoryId}:...
+    reservation:{...}
+
+No application logic changes were required because:
+
+- services already interacted with cache using key patterns
+- no service was tightly coupled to a specific cache instance
+- all workloads use TTL-based ephemeral state
+
+### Changes in This Branch
+
+- Consolidation of **multiple provisioned caches into a single cache**
+- Reduction in ElastiCache node count (multiple → one)
+- Reuse of existing browse-cache as the shared cache layer
+- All Lambda services updated to use the same cache endpoint
+- No changes to business logic, Lua scripts, or workflows
 
 ### Why This Approach Is Acceptable
 
-The primary reasons for choosing **ElastiCache Serverless** or a **multi-node provisioned replication design** are:
+The primary responsibilities of cache in this system are:
 
-- managed elasticity
-- built-in high availability
-- replica-based read scaling
-- stronger production-style resilience
+- queue coordination
+- seat locking
+- reservation metadata
+- browse response caching
 
-For this portfolio project:
+All of these share common characteristics:
 
-- cache traffic is extremely low
-- cache availability is not business-critical
-- cached data is ephemeral and can be rebuilt
-- the system does not need replica-based read scaling
-- the cost of additional managed abstraction is not justified
-- the complexity of refactoring Lambda code for provisioned multi-node cache behavior is unnecessary
+- short-lived (TTL-driven)
+- non-critical state
+- reconstructable from DB if lost
 
-Because of that, a **single-node provisioned cache** is the most reasonable trade-off for this branch.
+Because of that:
+
+- strong isolation is not required
+- multi-node HA is not required
+- replica-based scaling is not required
 
 The architecture intentionally favors:
 
-- lower infrastructure cost
-- simpler deployment
-- simpler Lambda integration
-- minimal deviation in application cache access logic
+- **minimum infrastructure cost**
+- **simpler deployment**
+- **single endpoint integration**
+- **no application refactoring**
 
 in exchange for:
 
-- reduced cache-layer high availability
-- no replica-based read scaling
-- single-node cache failure being a temporary cache outage until recovery
+- shared cache resource contention (low risk)
+- reduced cache isolation
+- single-node cache failure affecting all workloads temporarily
 
-### Branch Positioning
+---
 
-This lighter branch should be viewed as the **next cost-optimized step after the light branch**.
+## Branch Positioning
 
 The branch evolution is therefore:
 
@@ -151,12 +213,18 @@ The branch evolution is therefore:
       = still uses ElastiCache Serverless
 
     Lighter branch
-      = keeps direct Lambda → Aurora Serverless v2
-      = replaces ElastiCache Serverless with single-node provisioned ElastiCache
+      = replaces ElastiCache Serverless
+      = introduces provisioned caches (separate per workload)
 
-### Important Note
+    Lightest branch
+      = consolidates provisioned caches
+      = uses single shared cache across all services
 
-This lighter branch is intended for the **lowest-cost practical operation** of the portfolio project.
+---
+
+## Important Note
+
+The **lightest branch** represents the lowest-cost practical implementation of this system.
 
 It is specifically designed for:
 
@@ -165,17 +233,20 @@ It is specifically designed for:
 - personal project hosting
 - minimal ongoing infrastructure cost
 
-The **main branch** remains the reference implementation for the most production-oriented architecture.
+The **main branch** remains the reference implementation for production-style architecture.
 
-The **light branch** remains the intermediate cost-optimized design that removes RDS Proxy while retaining ElastiCache Serverless.
+The **light branch** focuses on database cost optimization.
 
-This **lighter branch** goes one step further by also simplifying the cache layer for cost efficiency and reduced application complexity.
+The **lighter branch** focuses on cache architecture optimization by moving away from serverless.
+
+The **lightest branch** takes this further by optimizing **both cache topology and utilization**.
 
 In summary:
 
 - **main branch** prioritizes architectural completeness
 - **light branch** prioritizes database cost optimization
-- **lighter branch** prioritizes both database and cache cost optimization
+- **lighter branch** prioritizes cache architecture changes
+- **lightest branch** prioritizes maximum cost efficiency with minimal structural change
 
 ---
 
