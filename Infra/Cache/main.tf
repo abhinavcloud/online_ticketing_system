@@ -79,7 +79,7 @@ resource "aws_elasticache_replication_group" "browse_cache" {
 
   engine               = "valkey"
   engine_version       = "9.0"
-  node_type            = "cache.t4g.micro"
+  node_type            = "cache.t2.micro"
   transit_encryption_enabled = true
   transit_encryption_mode    = "required"
 
@@ -137,7 +137,7 @@ resource "aws_elasticache_replication_group" "active_users" {
 
   engine               = "valkey"
   engine_version       = "9.0"
-  node_type            = "cache.t4g.micro"
+  node_type            = "cache.t2.micro"
   transit_encryption_enabled = true
   transit_encryption_mode    = "required"
 
@@ -194,7 +194,7 @@ resource "aws_elasticache_replication_group" "seat_lock" {
 
   engine               = "valkey"
   engine_version       = "9.0"
-  node_type            = "cache.t4g.micro"
+  node_type            = "cache.t2.micro"
   transit_encryption_enabled = true
   transit_encryption_mode    = "required"
 
