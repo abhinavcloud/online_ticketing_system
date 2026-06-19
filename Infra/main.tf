@@ -98,7 +98,7 @@ module "Compute" {
 
     #Secret Manager Policy ARN
     secret_manager_access_policy = module.Database.secret_manager_access_policy
-    
+   
 }
 
 module "Cache" {

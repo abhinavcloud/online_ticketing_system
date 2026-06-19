@@ -26,16 +26,16 @@ variable "browse_cache" {
     description = "ARN of the Browser Cache"
 }
 
-variable "active_user_lock_cache" {
-    type = string
-    description = "ARN of the Active User Lock Cache"
+#variable "active_user_lock_cache" {
+#    type = string
+#    description = "ARN of the Active User Lock Cache"
+#
+#}
 
-}
-
-variable "seat_lock_cache" {
-    type = string
-    description = "ARN of the Seat Lock Cachre"
-}
+#variable "seat_lock_cache" {
+#    type = string
+#    description = "ARN of the Seat Lock Cachre"
+#}
 
 variable "user" {
     type = string
