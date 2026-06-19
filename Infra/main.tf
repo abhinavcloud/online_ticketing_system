@@ -85,22 +85,20 @@ module "Compute" {
     browse_cache_name     = module.Cache.browse_cache_name
     browse_cache_ttl_seconds = 30
     #Active User Cache detail
-    active_users_cache_endpoint = module.Cache.active_users_cache_endpoint
-    active_users_cache_port     = module.Cache.active_users_cache_port
-    active_users_cache_name     = module.Cache.active_users_cache_name
+#    active_users_cache_endpoint = module.Cache.active_users_cache_endpoint
+#    active_users_cache_port     = module.Cache.active_users_cache_port
+#    active_users_cache_name     = module.Cache.active_users_cache_name
 
     #Seat Lock Cache
-    seat_lock_cache_endpoint =  module.Cache.seat_lock_cache_endpoint
-    seat_lock_cache_port  = module.Cache.seat_lock_cache_port
-    seat_lock_cache_name = module.Cache.seat_lock_cache_name
-
+#    seat_lock_cache_endpoint =  module.Cache.seat_lock_cache_endpoint
+#    seat_lock_cache_port  = module.Cache.seat_lock_cache_port
+#    seat_lock_cache_name = module.Cache.seat_lock_cache_name
     #Notification ARN
     notification_topic_arn = module.Notification.ticketing_notifications_topic_arn
 
     #Secret Manager Policy ARN
     secret_manager_access_policy = module.Database.secret_manager_access_policy
     
-  
 }
 
 module "Cache" {

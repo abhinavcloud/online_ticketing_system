@@ -131,35 +131,35 @@ resource "aws_elasticache_replication_group" "browse_cache" {
 #}
 
 
-resource "aws_elasticache_replication_group" "active_users" {
-  replication_group_id = "active-users"
-  description          = "Highly available browse cache using Valkey across 3 AZs"
+# resource "aws_elasticache_replication_group" "active_users" {
+# replication_group_id = "active-users"
+#  description          = "Highly available browse cache using Valkey across 3 AZs"
 
-  engine               = "valkey"
-  engine_version       = "9.0"
-  node_type            = "cache.t4g.micro"
-  transit_encryption_enabled = true
-  transit_encryption_mode    = "required"
+#  engine               = "valkey"
+#  engine_version       = "9.0"
+#  node_type            = "cache.t4g.micro"
+#  transit_encryption_enabled = true
+#  transit_encryption_mode    = "required"
 
  # Single node
-  num_cache_clusters          = 1
-  preferred_cache_cluster_azs = [var.preferred_cache_cluster_azs]
+#  num_cache_clusters          = 1
+#  preferred_cache_cluster_azs = [var.preferred_cache_cluster_azs]
 
 #  automatic_failover_enabled = true
 #  multi_az_enabled           = true
 
-  subnet_group_name  = aws_elasticache_subnet_group.elasticache_subnet.name
-  security_group_ids = [aws_security_group.elasticache_sg.id]
-  user_group_ids = [aws_elasticache_user_group.elasticache_user_group.id]
-  parameter_group_name       = "default.valkey9"
-  snapshot_retention_limit   = 1
-  apply_immediately          = true
-  auto_minor_version_upgrade = true
+#  subnet_group_name  = aws_elasticache_subnet_group.elasticache_subnet.name
+#  security_group_ids = [aws_security_group.elasticache_sg.id]
+#  user_group_ids = [aws_elasticache_user_group.elasticache_user_group.id]
+#  parameter_group_name       = "default.valkey9"
+#  snapshot_retention_limit   = 1
+#  apply_immediately          = true
+#  auto_minor_version_upgrade = true
 
- tags = {
-   Name = "active-users-cache"
- }
-}
+# tags = {
+#   Name = "active-users-cache"
+# }
+#}
 
 
 
@@ -188,32 +188,32 @@ resource "aws_elasticache_replication_group" "active_users" {
 #}
 
 
-resource "aws_elasticache_replication_group" "seat_lock" {
-  replication_group_id = "seat-lock"
-  description          = "Highly available browse cache using Valkey across 3 AZs"
+#resource "aws_elasticache_replication_group" "seat_lock" {
+#  replication_group_id = "seat-lock"
+#  description          = "Highly available browse cache using Valkey across 3 AZs"
 
-  engine               = "valkey"
-  engine_version       = "9.0"
-  node_type            = "cache.t4g.micro"
-  transit_encryption_enabled = true
-  transit_encryption_mode    = "required"
+#  engine               = "valkey"
+#  engine_version       = "9.0"
+#  node_type            = "cache.t4g.micro"
+#  transit_encryption_enabled = true
+#  transit_encryption_mode    = "required"
 
  # Single node
-  num_cache_clusters          = 1
-  preferred_cache_cluster_azs = [var.preferred_cache_cluster_azs]
+#  num_cache_clusters          = 1
+#  preferred_cache_cluster_azs = [var.preferred_cache_cluster_azs]
 
 #  automatic_failover_enabled = true
 #  multi_az_enabled           = true
 
-  subnet_group_name  = aws_elasticache_subnet_group.elasticache_subnet.name
-  security_group_ids = [aws_security_group.elasticache_sg.id]
-  user_group_ids = [aws_elasticache_user_group.elasticache_user_group.id]
-  parameter_group_name       = "default.valkey9"
-  snapshot_retention_limit   = 1
-  apply_immediately          = true
-  auto_minor_version_upgrade = true
+#  subnet_group_name  = aws_elasticache_subnet_group.elasticache_subnet.name
+#  security_group_ids = [aws_security_group.elasticache_sg.id]
+#  user_group_ids = [aws_elasticache_user_group.elasticache_user_group.id]
+#  parameter_group_name       = "default.valkey9"
+#  snapshot_retention_limit   = 1
+#  apply_immediately          = true
+#  auto_minor_version_upgrade = true
 
- tags = {
-   Name = "seat-lock-cache"
- }
-}
+# tags = {
+#   Name = "seat-lock-cache"
+# }
+#}

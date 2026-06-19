@@ -166,10 +166,10 @@ def _seatlock_cache():
     if redis is None:
         raise RuntimeError("redis library not available.")
 
-    endpoint = _env_str("SEAT_LOCK_CACHE_ENDPOINT", required=True)
-    port = int(_env_str("SEAT_LOCK_CACHE_PORT") or "6379")
-    cache_name = _env_str("SEAT_LOCK_CACHE_NAME", required=True)
-    user_id = _env_str("SEAT_LOCK_ELASTICACHE_USER_ID", "ELASTICACHE_USER_ID", required=True)
+    endpoint = _env_str("BROWSE_CACHE_ENDPOINT", required=True)
+    port = int(_env_str("BROWSE_CACHE_PORT") or "6379")
+    cache_name = _env_str("BROWSE_CACHE_NAME", required=True)
+    user_id = _env_str("ELASTICACHE_USER_ID", required=True)
     region = os.environ.get("APP_REGION") or os.environ.get("AWS_DEFAULT_REGION")
 
     now = time.time()

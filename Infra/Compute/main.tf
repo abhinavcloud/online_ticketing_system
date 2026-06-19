@@ -33,8 +33,8 @@ resource "aws_iam_policy" "lambda_elasticache_policy" {
       "Sid": "ElastiCacheServerlessIamAuthConnect",
       "Effect": "Allow",
       "Action": "elasticache:Connect",
-    
-      "Resource": [var.browse_cache, var.active_user_lock_cache, var.seat_lock_cache, var.user]
+      "Resource": [var.browse_cache]
+      #"Resource": [var.browse_cache, var.active_user_lock_cache, var.seat_lock_cache, var.user]
     },
 
     {
@@ -357,18 +357,19 @@ environment {
     # -------------------------------------------------------------------
     # Cache A: Queue Cache == Active User Lock Cache (Valkey Serverless IAM)
     # -------------------------------------------------------------------
-    ACTIVE_USERS_CACHE_ENDPOINT = var.active_users_cache_endpoint
-    ACTIVE_USERS_CACHE_PORT     = tostring(var.active_users_cache_port)
-    ACTIVE_USERS_CACHE_NAME     = var.active_users_cache_name
-    ELASTICACHE_USER_ID         = var.elasticache_user_id
+      BROWSE_CACHE_ENDPOINT     = var.browse_cache_endpoint
+      BROWSE_CACHE_PORT         = tostring(var.browse_cache_port)
+      BROWSE_CACHE_NAME         = var.browse_cache_name
+      ELASTICACHE_USER_ID       = var.elasticache_user_id
+
 
     # -------------------------------------------------------------------
     # Cache B: Seat Lock Cache (Valkey Serverless IAM)  [not used yet]
     # -------------------------------------------------------------------
-    SEAT_LOCK_CACHE_ENDPOINT    = var.seat_lock_cache_endpoint
-    SEAT_LOCK_CACHE_PORT        = tostring(var.seat_lock_cache_port)
-    SEAT_LOCK_CACHE_NAME        = var.seat_lock_cache_name
-    SEAT_LOCK_ELASTICACHE_USER_ID = var.elasticache_user_id
+#    SEAT_LOCK_CACHE_ENDPOINT    = var.seat_lock_cache_endpoint
+#    SEAT_LOCK_CACHE_PORT        = tostring(var.seat_lock_cache_port)
+#    SEAT_LOCK_CACHE_NAME        = var.seat_lock_cache_name
+#    SEAT_LOCK_ELASTICACHE_USER_ID = var.elasticache_user_id
 
     # -------------------------------------------------------------------
     # Queue behavior (HLD-driven + safe guardrails)
@@ -467,19 +468,20 @@ resource "aws_lambda_function" "seat_availability_service" {
       # Cache A (Queue cache == Active Users cache)
       # Used to verify sessionId is ALLOWED
       # -----------------------------
-      ACTIVE_USERS_CACHE_ENDPOINT = var.active_users_cache_endpoint
-      ACTIVE_USERS_CACHE_PORT     = tostring(var.active_users_cache_port)
-      ACTIVE_USERS_CACHE_NAME     = var.active_users_cache_name
-      ELASTICACHE_USER_ID         = var.elasticache_user_id
+      BROWSE_CACHE_ENDPOINT     = var.browse_cache_endpoint
+      BROWSE_CACHE_PORT         = tostring(var.browse_cache_port)
+      BROWSE_CACHE_NAME         = var.browse_cache_name
+      ELASTICACHE_USER_ID       = var.elasticache_user_id
+
 
       # -----------------------------
       # Cache B (Seat Lock cache) - READ ONLY here
       # Reservation service will write locks to this cache
       # -----------------------------
-      SEAT_LOCK_CACHE_ENDPOINT          = var.seat_lock_cache_endpoint
-      SEAT_LOCK_CACHE_PORT              = tostring(var.seat_lock_cache_port)
-      SEAT_LOCK_CACHE_NAME              = var.seat_lock_cache_name
-      SEAT_LOCK_ELASTICACHE_USER_ID     = var.elasticache_user_id
+#      SEAT_LOCK_CACHE_ENDPOINT          = var.seat_lock_cache_endpoint
+#      SEAT_LOCK_CACHE_PORT              = tostring(var.seat_lock_cache_port)
+#      SEAT_LOCK_CACHE_NAME              = var.seat_lock_cache_name
+#      SEAT_LOCK_ELASTICACHE_USER_ID     = var.elasticache_user_id
 
       # -----------------------------
       # Behavior knobs
@@ -563,19 +565,20 @@ resource "aws_lambda_function" "reservation_service" {
       # Cache A (Queue cache == Active Users cache)
       # Used to verify sessionId is ALLOWED
       # -----------------------------
-      ACTIVE_USERS_CACHE_ENDPOINT = var.active_users_cache_endpoint
-      ACTIVE_USERS_CACHE_PORT     = tostring(var.active_users_cache_port)
-      ACTIVE_USERS_CACHE_NAME     = var.active_users_cache_name
-      ELASTICACHE_USER_ID         = var.elasticache_user_id
+      BROWSE_CACHE_ENDPOINT     = var.browse_cache_endpoint
+      BROWSE_CACHE_PORT         = tostring(var.browse_cache_port)
+      BROWSE_CACHE_NAME         = var.browse_cache_name
+      ELASTICACHE_USER_ID       = var.elasticache_user_id
+
 
       # -----------------------------
       # Cache B (Seat Lock cache) - READ ONLY here
       # Reservation service will write locks to this cache
       # -----------------------------
-      SEAT_LOCK_CACHE_ENDPOINT          = var.seat_lock_cache_endpoint
-      SEAT_LOCK_CACHE_PORT              = tostring(var.seat_lock_cache_port)
-      SEAT_LOCK_CACHE_NAME              = var.seat_lock_cache_name
-      SEAT_LOCK_ELASTICACHE_USER_ID     = var.elasticache_user_id
+#      SEAT_LOCK_CACHE_ENDPOINT          = var.seat_lock_cache_endpoint
+#      SEAT_LOCK_CACHE_PORT              = tostring(var.seat_lock_cache_port)
+#      SEAT_LOCK_CACHE_NAME              = var.seat_lock_cache_name
+#      SEAT_LOCK_ELASTICACHE_USER_ID     = var.elasticache_user_id
 
       # -----------------------------
       # Behavior knobs
@@ -708,19 +711,20 @@ resource "aws_lambda_function" "confirmation_service" {
       # Cache A (Queue cache == Active Users cache)
       # Used to verify sessionId is ALLOWED
       # -----------------------------
-      ACTIVE_USERS_CACHE_ENDPOINT = var.active_users_cache_endpoint
-      ACTIVE_USERS_CACHE_PORT     = tostring(var.active_users_cache_port)
-      ACTIVE_USERS_CACHE_NAME     = var.active_users_cache_name
-      ELASTICACHE_USER_ID         = var.elasticache_user_id
+      BROWSE_CACHE_ENDPOINT     = var.browse_cache_endpoint
+      BROWSE_CACHE_PORT         = tostring(var.browse_cache_port)
+      BROWSE_CACHE_NAME         = var.browse_cache_name
+      ELASTICACHE_USER_ID       = var.elasticache_user_id
+
 
       # -----------------------------
       # Cache B (Seat Lock cache) - READ ONLY here
       # Reservation service will write locks to this cache
       # -----------------------------
-      SEAT_LOCK_CACHE_ENDPOINT          = var.seat_lock_cache_endpoint
-      SEAT_LOCK_CACHE_PORT              = tostring(var.seat_lock_cache_port)
-      SEAT_LOCK_CACHE_NAME              = var.seat_lock_cache_name
-      SEAT_LOCK_ELASTICACHE_USER_ID     = var.elasticache_user_id
+#      SEAT_LOCK_CACHE_ENDPOINT          = var.seat_lock_cache_endpoint
+#      SEAT_LOCK_CACHE_PORT              = tostring(var.seat_lock_cache_port)
+#      SEAT_LOCK_CACHE_NAME              = var.seat_lock_cache_name
+#      SEAT_LOCK_ELASTICACHE_USER_ID     = var.elasticache_user_id
 
   }
 
